@@ -1,0 +1,28 @@
+os: linux
+language: python
+python:
+- 3.6
+- 3.7-dev
+
+matrix:
+  include:
+  - os: osx
+    language: generic
+    python: 3.6
+    before_install:
+    - curl -Lo python.pkg https://www.python.org/ftp/python/3.6.6/python-3.6.6-macosx10.6.pkg
+    - sudo installer -pkg python.pkg -target /
+    - /Applications/Python\ 3.6/Install\ Certificates.command
+  allow_failures:
+  - python: "3.7-dev"
+
+install:
+- pip3 install .
+script:
+- wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps test -- echo 'Hello World'
+- wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps submit C examples/judge.u-aizu.ac.jp/ITP1_1_A.c
+- wa 'https://leetcode.com/problems/powx-n/' --debug --timestamps submit c examples/leetcode.com/powx-n.c
+cache:
+  pip: true
+  directories:
+  - $HOME/.cache/data
