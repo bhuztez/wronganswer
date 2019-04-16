@@ -23,7 +23,8 @@ def readline_get_credential(oj, fields):
 
 
 def environ_get_credential(oj, fields):
+    import os
     credential = {}
     for key, desc, is_password in fields:
-        credential[key] = os.environ[title.split(' ')[0] + '_' + key]
+        credential[key] = os.environ["".join(c.lower().capitalize().replace("-",'_') for c in oj.split(".")) + '_' + key]
     return credential
