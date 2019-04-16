@@ -13,7 +13,7 @@ matrix:
     - curl -Lo python.pkg https://www.python.org/ftp/python/3.6.6/python-3.6.6-macosx10.6.pkg
     - sudo installer -pkg python.pkg -target /
     - /Applications/Python\ 3.6/Install\ Certificates.command
-    - export PATH="$PATH:$HOME/.local/bin"
+    - export PATH="$PATH:/Library/Frameworks/Python.framework/Versions/3.6/bin"
   allow_failures:
   - python: "3.7-dev"
 
@@ -26,4 +26,4 @@ script:
 cache:
   pip: true
   directories:
-  - $HOME/.cache/data
+  - $HOME/.cache/wronganswer/data
