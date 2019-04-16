@@ -14,4 +14,5 @@ class DbmStateStore(StateStore):
 
     def store(self, netloc, state):
         self.db[netloc] = state
-        self.db.sync()
+        if hasattr(self.db, 'sync'):
+            self.db.sync()
