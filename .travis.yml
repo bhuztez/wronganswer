@@ -18,7 +18,7 @@ matrix:
 
 install:
 - pip3 install --upgrade pip
-- pip3 install .
+- pip3 install --process-dependency-links .
 script:
 - wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps test -- echo 'Hello World'
 - wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps submit C examples/judge.u-aizu.ac.jp/ITP1_1_A.c
