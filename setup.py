@@ -22,7 +22,7 @@ setup(
     author = 'bhuztez',
     author_email = 'bhuztez@gmail.com',
 
-    packages = ['wronganswer', 'wronganswer.agent', 'wronganswer.client', 'wronganswer.cache'],
+    packages = ['wronganswer', 'wronganswer.agent', 'wronganswer.client', 'wronganswer.cache', 'wronganswer.state'],
     entry_points={
         'console_scripts':
         [ 'wa = wronganswer:main' ],
@@ -38,6 +38,6 @@ setup(
         ]},
 
     install_requires = ['miasma'],
-    dependency_links=['git+https://github.com/bhuztez/miasma@5f3ccbbf060ede575ff1d866fede7ec751e8d421#egg=miasma'],
+    dependency_links=['git+https://github.com/bhuztez/miasma@69afa4ab3417ed1354a597416fde429d3f96358b#egg=miasma-0.0'],
     zip_safe = False,
 )
