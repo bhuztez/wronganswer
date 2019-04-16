@@ -75,11 +75,11 @@ class LeetcodeClient(HTTP, Client):
 
         data = json.loads(response.read())
         state = data["state"]
-        msg = data["status_msg"]
 
         if state != "SUCCESS":
-            return None, msg
+            return None, state
 
+        msg = data["status_msg"]
         if data["status_code"] != 10:
             return False, msg
 
