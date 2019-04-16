@@ -17,6 +17,7 @@ matrix:
   - python: "3.7-dev"
 
 install:
+- pip3 install --upgrade pip
 - pip3 install .
 script:
 - wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps test -- echo 'Hello World'
