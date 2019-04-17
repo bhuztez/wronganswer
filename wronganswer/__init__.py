@@ -66,7 +66,7 @@ async def _main(mod, argv):
         '''run test locally'''
         reader = await profile.testcases(oj, pid)
         for name in names or reader:
-            await profile.test(oj, pid, name, argv)
+            await profile.run_test(oj, pid, name, argv)
 
     @command
     @task(f"Submit {{filename}}, solution to problem {pid} in {{env}}, to {oj}")

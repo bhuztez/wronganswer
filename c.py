@@ -15,7 +15,6 @@ if __name__ == '__main__':
     quit()
 
 import os
-from shutil import which
 
 SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
 
@@ -51,3 +50,11 @@ async def ReadSubmission(name, recompile):
     source = await ReadFile(asm)
     env, source = await profile.asm2c(oj, pid, source)
     return env, source
+
+
+command(Compile)
+command(Run)
+command(Test)
+command(Preview)
+command(Submit)
+command(Clean)

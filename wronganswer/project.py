@@ -108,7 +108,6 @@ def init(cfg):
         assert proc.returncode == 0
         return dest
 
-    @command
     @task("Compile {filename}")
     async def Compile(filename: cfg.Argument(help="path to solution"),
                       recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
@@ -120,7 +119,6 @@ def init(cfg):
             dest = await _compile(dest, recompile, mode, target)
         return dest
 
-    @command
     @task("Run {filename}")
     async def Run(filename: cfg.Argument(help="path to solution"),
                   recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
@@ -136,7 +134,6 @@ def init(cfg):
         for name in reader:
             await profile.run_test(oj, pid, name, cfg.get_run_argv(executable))
 
-    @command
     @task()
     async def Test(filename: cfg.Argument(help="path to solution"),
                    recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
@@ -145,7 +142,6 @@ def init(cfg):
         for name, (oj, pid) in find_solutions(filename):
             await cfg.TestSolution(oj, pid, name, recompile, mode)
 
-    @command
     @task("Preview {filename}")
     async def Preview(filename: cfg.Argument(help="path to solution"),
                       recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
@@ -154,7 +150,6 @@ def init(cfg):
         env, code = await cfg.ReadSubmission(name, recompile)
         print(code.decode())
 
-    @command
     @task("Submit {filename}")
     async def Submit(filename: cfg.Argument(help="path to solution"),
                      agent: cfg.Argument("--agent", default='localhost'),
@@ -179,7 +174,6 @@ def init(cfg):
         for filename in iglob(f"{dirname}/**/{basename}.*", recursive=True):
             await cfg.RemoveFile(filename)
 
-    @command
     @task("Clean")
     async def Clean(filename:cfg.Argument(nargs='?', help="path to solution")=None):
         """removes generated files"""

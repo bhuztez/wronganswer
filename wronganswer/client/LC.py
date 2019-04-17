@@ -19,7 +19,7 @@ class LeetcodeClient(HTTP, Client):
         if response.getcode() == 403:
             raise AuthError()
         if response.getcode() == 429:
-            time.sleep(10)
+            sleep(10)
         return response
 
     async def pid(self, o):
