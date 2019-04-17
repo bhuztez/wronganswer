@@ -1,7 +1,7 @@
 import sys
 
 def init(cfg):
-    __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CheckOutput', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'SubmitSolution', 'Status', 'Clean')
+    __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CheckOutput', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'Clean')
 
     import os
     import re
@@ -86,7 +86,6 @@ def init(cfg):
 
     ReadSource = ReadFile
 
-    @task()
     async def CompileLibs(mode='debug', target=None):
         return ()
 
@@ -127,14 +126,14 @@ def init(cfg):
         argv = cfg.get_run_argv(executable)
         await cfg.Call(argv)
 
-    @task()
+    @task("Test {filename}, solution to {pid} of {oj}")
     async def TestSolution(oj, pid, filename, recompile, mode='debug', target=None):
         executable = await cfg.Compile(filename, recompile, mode, target)
         reader = await profile.testcases(oj, pid)
         for name in reader:
             await profile.run_test(oj, pid, name, cfg.get_run_argv(executable))
 
-    @task()
+    @task("Test")
     async def Test(filename: cfg.Argument(help="path to solution"),
                    recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
                    mode: cfg.Argument("--mode") = 'debug'):

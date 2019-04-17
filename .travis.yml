@@ -24,6 +24,7 @@ script:
 - wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps submit C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 - wa 'https://leetcode.com/problems/powx-n/' --debug --timestamps submit c examples/leetcode.com/powx-n.c
 - ./c.py --debug --timestamps test solutions
+- ./c.py --debug --timestamps test --mode release solutions
 - ./c.py --debug --timestamps submit solutions
 - ./c.py --debug --timestamps submit examples
 cache:
