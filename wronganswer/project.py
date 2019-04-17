@@ -166,7 +166,12 @@ def init(cfg):
 
     @task("Remove {filename}")
     async def RemoveFile(filename, rootdir=None):
-        os.remove(os.path.join(rootdir or cfg.ROOTDIR, filename))
+        path = os.path.join(rootdir or cfg.ROOTDIR, filename)
+        if os.path.isdir(path):
+            from shutil import rmtree
+            rmtree(path, ignore_errors=True)
+        else:
+            os.remove(path)
 
     @task("Remove {filename}", level=logging.DEBUG)
     async def RemoveOutput(filename, rootdir=None):
