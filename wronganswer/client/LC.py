@@ -117,5 +117,5 @@ class LeetcodeClient(HTTP, Client):
         assert snippet.endswith("}")
         snippet = snippet[:-1].rstrip()
         assert snippet.endswith("{")
-        snippet = snippet[:-1].rstrip() + ";"
+        snippet = snippet[:-1].rstrip() + ";\n"
         return snippet.encode()
