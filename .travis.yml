@@ -21,8 +21,11 @@ install:
 - pip3 install --verbose --no-index --process-dependency-links .
 script:
 - wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps test -- echo 'Hello World'
-- wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps submit C examples/judge.u-aizu.ac.jp/ITP1_1_A.c
+- wa 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' --debug --timestamps submit C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 - wa 'https://leetcode.com/problems/powx-n/' --debug --timestamps submit c examples/leetcode.com/powx-n.c
+- ./c.py --debug --timestamps test solutions
+- ./c.py --debug --timestamps submit solutions
+- ./c.py --debug --timestamps submit examples
 cache:
   pip: true
   directories:

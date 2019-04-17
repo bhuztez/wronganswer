@@ -1,5 +1,6 @@
 import json
 from urllib.parse import urlparse
+from time import sleep
 from ..profile import AuthError
 from ..http import HTTP
 from . import Client
@@ -17,6 +18,8 @@ class LeetcodeClient(HTTP, Client):
     def http_response(self, request, response):
         if response.getcode() == 403:
             raise AuthError()
+        if response.getcode() == 429:
+            time.sleep(10)
         return response
 
     async def pid(self, o):
@@ -80,10 +83,39 @@ class LeetcodeClient(HTTP, Client):
             return None, state
 
         msg = data["status_msg"]
-        if data["status_code"] != 10:
-            return False, msg
+        code = data["status_code"]
+        if code == 10:
+            memory = data["status_memory"]
+            runtime = data["status_runtime"]
+            return True, msg, f"Memory: {memory}, Time: {runtime}"
 
-        memory = data["status_memory"]
-        runtime = data["status_runtime"]
+        error = "full_" + "_".join(s.lower() for s in msg.split())
+        if error in data:
+            return False, data[error]
 
-        return True, msg, f"Memory: {memory}, Time: {runtime}"
+        return False, msg
+
+    async def snippet(self, pid, env):
+        await self.get_csrftoken()
+        response = await self.open(
+            f"https://{self.netloc}/graphql",
+            { "operationName": "questionData",
+              "query": "query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { codeSnippets { langSlug code } } }",
+              "variables": {
+                  "titleSlug": pid
+              }
+            },
+            {"Content-Type": self.JSON})
+
+        for s in json.loads(response.read())["data"]["question"]["codeSnippets"]:
+            if s['langSlug'] == env:
+                return s['code']
+
+    async def prologue(self, pid):
+        snippet = await self.snippet(pid, 'c')
+        snippet = snippet.rstrip()
+        assert snippet.endswith("}")
+        snippet = snippet[:-1].rstrip()
+        assert snippet.endswith("{")
+        snippet = snippet[:-1].rstrip() + ";"
+        return snippet.encode()

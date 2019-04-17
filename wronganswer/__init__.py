@@ -1,23 +1,16 @@
 import os
 import sys
-from miasma import task
+from miasma import task, Command, Argument
 from .profile import Profile
-from .judge import compare_output
 
 
-@task("Wrong Answer CLI")
-async def _main(handler, prog, argv):
+async def _main(mod, argv):
     import logging
     logger = logging.getLogger(__package__)
 
     from urllib.request import urlparse
-    from subprocess import Popen, PIPE
 
-    from miasma import Command, Argument
-
-    command = Command(prog=f"{prog} URL", description="Wrong Answer")
-    command.add_argument("--timestamps", action="store_true", default=False, help="show timestamp on each log line")
-    command.add_argument("--debug", action="store_true", default=False, help="turn on debug logging")
+    command = mod.command
 
     profile = Profile()
     if not argv:
@@ -41,14 +34,6 @@ async def _main(handler, prog, argv):
     async def output(reader, name):
         intput, output = reader[name]
         print(output.read().decode(), end='')
-
-    @task("Check against testcase {name}")
-    async def test(reader, name, argv):
-        input, output = reader[name]
-        p = Popen(argv,stdin=PIPE,stdout=PIPE)
-        got, _ = p.communicate(input.read())
-        assert p.returncode == 0, "Exit code = {}".format(p.returncode)
-        assert compare_output(got, output.read()), "Wrong Answer"
 
     @command
     @task(f"List testcases of problem {pid} of {oj}")
@@ -81,7 +66,7 @@ async def _main(handler, prog, argv):
         '''run test locally'''
         reader = await profile.testcases(oj, pid)
         for name in names or reader:
-            await test(reader, name, argv)
+            await profile.test(oj, pid, name, argv)
 
     @command
     @task(f"Submit {{filename}}, solution to problem {pid} in {{env}}, to {oj}")
@@ -95,31 +80,17 @@ async def _main(handler, prog, argv):
             with open(filename, 'rb') as f:
                 data = f.read()
 
-        token = await profile.submit(oj, pid, env, data, agent)
-        status = None
-        while status is None:
-            status, message, *extra = await profile.status(oj, token, agent)
-        assert status, message
+        message, extra = await profile.submit(oj, pid, env, data, agent)
         print(message)
-        if extra:
-            print(extra[0])
+        print(extra)
 
     cmd, args = command.parse(argv[1:], "list")
-    if args.timestamps:
-        formatter = logging.Formatter(fmt='{asctime} {message}',datefmt='%Y-%m-%d %H:%M:%S', style='{')
-        handler.setFormatter(formatter)
-    if args.debug:
-        logger.setLevel(logging.DEBUG)
-        profile.set_debug(True)
-
-    await cmd(args)
+    profile.set_debug(args.debug)
+    return cmd, args
 
 
-def main(argv=sys.argv[1:]):
-    import logging
-    logging.captureWarnings(True)
-    logger = logging.getLogger('')
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler()
-    logger.addHandler(handler)
-    _main(handler, os.path.basename(sys.argv[0]), argv).run(retry=3)
+def main():
+    prog = os.path.basename(sys.argv[0])
+    argv = sys.argv[1:]
+    command = Command(prog=f"{prog} URL", description="Wrong Answer")
+    command.run(_main, argv)

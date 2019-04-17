@@ -6,9 +6,19 @@ from urllib.parse import urlparse
 from collections import namedtuple
 import csv
 from io import StringIO
+from subprocess import Popen, PIPE
 import logging
 from . import task
-from .credential import readline_get_credential, environ_get_credential
+from .judge import compare_output
+from .asm import escape_source, llvm_target
+
+import platform
+if platform.system() == 'Windows':
+    from subprocess import list2cmdline as quote_argv
+else:
+    from pipes import quote
+    def quote_argv(argv):
+        return " ".join(quote(a) for a in argv)
 
 logger = logging.getLogger(__package__)
 
@@ -33,6 +43,11 @@ class Persistable(ABC):
 def testcases(client, oj, pid, writer):
     return client.testcases(pid, writer)
 
+def index_of(l, x):
+    try:
+        return l.index(x)
+    except ValueError:
+        return len(l)
 
 class Profile:
 
@@ -42,8 +57,10 @@ class Profile:
         self._get_credential = get_credential
         if get_credential is None:
             if sys.stdin.isatty():
+                from .credential import readline_get_credential
                 self._get_credential = readline_get_credential
             if 'TRAVIS_JOB_ID' in os.environ:
+                from .credential import environ_get_credential
                 self._get_credential = environ_get_credential
 
         self.state_store = state_store
@@ -79,7 +96,13 @@ class Profile:
         return self.get_agent().get_client(oj)
 
     def get_envs(self, oj):
-        return [Env._make(v) for v in csv.reader(StringIO(self.get_client(oj).submit.__doc__.strip()))]
+        try:
+            client = self.get_client(oj)
+        except AssertionError:
+            return []
+
+        for v in csv.reader(StringIO(client.submit.__doc__.strip())):
+            yield Env._make(v)
 
     def get_env(self, oj, code):
         for env in self.get_envs(oj):
@@ -103,14 +126,53 @@ class Profile:
             reader = self.cache_store.get(key, pid)
         return reader
 
-    @task("Submit solution to problem {pid} in {env} to {oj} via {agent}")
-    def submit(self, oj, pid, env, code, agent="localhost"):
+    @task("Check against testcase {name}")
+    async def run_test(self, oj, pid, name, argv):
+        reader = await self.testcases(oj, pid)
+        input, output = reader[name]
+        logger.debug(quote_argv(argv))
+        p = Popen(argv,stdin=PIPE,stdout=PIPE)
+        got, _ = p.communicate(input.read())
+        assert p.returncode == 0, "Exit code = {}".format(p.returncode)
+        assert compare_output(got, output.read()), "Wrong Answer"
+
+    def raw_submit(self, oj, pid, env, code, agent="localhost"):
         logger.debug("%s", self.get_env(oj, env))
         return self.get_agent(agent).submit(oj, pid, env, code)
 
     @task("Check status of submission {token}")
     def status(self, oj, token, agent="localhost"):
         return self.get_agent(agent).status(oj, token)
+
+    @task("Submit solution to problem {pid} in {env} to {oj} via {agent}")
+    async def submit(self, oj, pid, env, code, agent="localhost"):
+        token = await self.raw_submit(oj, pid, env, code, agent)
+        status = None
+        while status is None:
+            status, message, *extra = await self.status(oj, token)
+        assert status, message
+        return message, extra[0]
+
+    def _asm_pick_env(self, oj):
+        envs = self.get_envs(oj)
+        envs = [c for c in envs
+                if c.lang == "C" and c.name in ("GCC", "MinGW")]
+        envs.sort(key=lambda c:
+                  (index_of(['Linux','Windows'], c.os),
+                   index_of(['x86_64','x86'], c.arch)))
+        assert envs
+        if envs:
+            return envs[0]
+
+    def asm_llvm_target(self, oj):
+        return llvm_target(self._asm_pick_env(oj))
+
+    @task("Escape assembly code")
+    async def asm2c(self, oj, pid, source):
+        env = self._asm_pick_env(oj)
+        client = self.get_client(oj)
+        prologue = await client.prologue(pid)
+        return env.code, prologue + escape_source(source)
 
     def load_state(self, netloc, client):
         if isinstance(client, Persistable):

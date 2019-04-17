@@ -9,3 +9,6 @@ class Client(ABC):
     @abstractmethod
     def status(self, token):
         pass
+
+    async def prologue(self, pid):
+        return b''
