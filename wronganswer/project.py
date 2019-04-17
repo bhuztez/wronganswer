@@ -1,4 +1,5 @@
 import sys
+from .asm import escape_source
 
 def init(cfg):
     __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CheckOutput', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'Clean')
@@ -89,7 +90,7 @@ def init(cfg):
     async def CompileLibs(mode='debug', target=None):
         return ()
 
-    async def _compile(filename, recompile, mode, target):
+    async def _compile(filename, recompile, mode, target, escape=False):
         libs = await cfg.CompileLibs(mode, target)
         dest, argv, env = cfg.get_compile_argv(mode, target, filename, *libs)
         if dest == filename:
@@ -99,6 +100,9 @@ def init(cfg):
             return dest
 
         source = await cfg.ReadSource(filename)
+        if escape:
+            source = escape_source(source)
+
         os.makedirs(os.path.dirname(dest), exist_ok=True)
 
         logger.debug(quote_argv(argv))
@@ -115,7 +119,7 @@ def init(cfg):
         '''compile solution'''
         dest = await _compile(filename, recompile, mode, target)
         if mode == 'release' and target is None:
-            dest = await _compile(dest, recompile, mode, target)
+            dest = await _compile(dest, recompile, mode, target, True)
         return dest
 
     @task("Run {filename}")

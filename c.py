@@ -42,14 +42,6 @@ def get_run_argv(filename):
     return (os.path.join(ROOTDIR, filename),)
 
 
-@task("Read source code of {filename}")
-async def ReadSource(filename):
-    _, (oj, pid) = get_solution_info(filename)
-    source = await ReadFile(filename)
-    if filename.endswith(".s"):
-        env, source = await profile.asm2c(oj, pid, source)
-    return source
-
 @task("Read submission code of {name}")
 async def ReadSubmission(name, recompile):
     _, (oj, pid) = get_solution_info(name)
