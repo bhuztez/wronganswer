@@ -46,11 +46,10 @@ def init(cfg):
     SOLUTIONS_DIR = os.path.join(ROOTDIR, "solutions")
 
     def get_solution_info(filename):
-        name = relative_path(cfg.ROOTDIR, filename)
-        m = re.match(cfg.SOLUTION_PATTERN, name)
+        m = re.match(cfg.SOLUTION_PATTERN, filename)
         if m is None:
             return None
-        return name, (m.group('oj'), m.group('pid'))
+        return m.group('oj'), m.group('pid')
 
     def find_solutions(filename=None):
         if filename is None:
@@ -58,14 +57,15 @@ def init(cfg):
         if os.path.isdir(filename):
             for root,dirs,files in os.walk(filename):
                 for name in files:
-                    fullname = os.path.join(root,name)
+                    fullname = relative_path(cfg.ROOTDIR, os.path.join(root,name))
                     info = cfg.get_solution_info(fullname)
                     if info:
-                        yield info
+                        yield fullname, info
         else:
+            fullname = relative_path(cfg.ROOTDIR, filename)
             info = cfg.get_solution_info(filename)
             if info:
-                yield info
+                yield fullname, info
 
     command = cfg.command
     task = cfg.task
@@ -138,7 +138,7 @@ def init(cfg):
             await profile.run_test(oj, pid, name, cfg.get_run_argv(executable))
 
     @task("Test")
-    async def Test(filename: cfg.Argument(help="path to solution"),
+    async def Test(filename: cfg.Argument(nargs='?', help="path to solution") = None,
                    recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
                    mode: cfg.Argument("--mode") = 'debug'):
         '''check solution against sample testcases'''
@@ -149,14 +149,15 @@ def init(cfg):
     async def Preview(filename: cfg.Argument(help="path to solution"),
                       recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
         '''preview the code to be submitted'''
-        name, (oj, pid) = cfg.get_solution_info(filename)
-        env, code = await cfg.ReadSubmission(name, recompile)
+        filename = relative_path(cfg.ROOTDIR, filename)
+        oj, pid = cfg.get_solution_info(filename)
+        env, code = await cfg.ReadSubmission(filename, recompile)
         print(code.decode())
 
     @task("Submit {filename}")
-    async def Submit(filename: cfg.Argument(help="path to solution"),
-                     agent: cfg.Argument("--agent", default='localhost'),
-                     recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
+    async def Submit(agent: cfg.Argument("--agent", default='localhost') = 'localhost',
+                     recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
+                     filename: cfg.Argument(nargs='?', help="path to solution") = None):
         '''submit solution'''
         for name, (oj, pid) in find_solutions(filename):
             env, code = await cfg.ReadSubmission(name, recompile)
@@ -183,7 +184,7 @@ def init(cfg):
             await cfg.RemoveFile(filename)
 
     @task("Clean")
-    async def Clean(filename:cfg.Argument(nargs='?', help="path to solution")=None):
+    async def Clean(filename:cfg.Argument(nargs='?', help="path to solution") = None):
         """removes generated files"""
 
         for name,info in find_solutions(filename):
