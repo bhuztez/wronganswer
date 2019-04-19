@@ -79,7 +79,7 @@ async def _main(mod, argv):
                 data = f.read()
 
         message, extra = await profile.submit(oj, pid, env, data, agent)
-        logger.info("%.0s %s", message, name)
+        logger.info("%.0s %s", message, filename)
         print(extra)
 
     cmd, args = command.parse(argv[1:], "list")
