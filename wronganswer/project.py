@@ -77,12 +77,11 @@ def init(cfg):
             return f.read()
 
     async def Call(argv, *args, **kwargs):
-        logger.debug(quote_argv(argv))
+        logger.debug("Running `{}`".format(quote_argv(argv)))
         return check_call(argv, *args, **kwargs)
 
     async def CheckOutput(argv, *args, **kwargs):
-        if cfg.VERBOSE:
-            print(quote_argv(argv))
+        logger.debug("Running `{}`".format(quote_argv(argv)))
         return check_output(argv, *args, **kwargs)
 
     ReadSource = ReadFile
@@ -105,7 +104,7 @@ def init(cfg):
 
         os.makedirs(os.path.dirname(dest), exist_ok=True)
 
-        logger.debug(quote_argv(argv))
+        logger.debug("Running `{}`".format(quote_argv(argv)))
         proc = Popen(argv,stdin=PIPE,env=env)
         proc.communicate(source)
         assert proc.returncode == 0
@@ -130,12 +129,10 @@ def init(cfg):
         argv = cfg.get_run_argv(executable)
         await cfg.Call(argv)
 
-    @task("Test {filename}, solution to {pid} of {oj}")
+    @task("Test {filename}")
     async def TestSolution(oj, pid, filename, recompile, mode='debug', target=None):
         executable = await cfg.Compile(filename, recompile, mode, target)
-        reader = await profile.testcases(oj, pid)
-        for name in reader:
-            await profile.run_test(oj, pid, name, cfg.get_run_argv(executable))
+        await profile.run_tests(oj, pid, [], cfg.get_run_argv(executable))
 
     @task("Test")
     async def Test(filename: cfg.Argument(nargs='?', help="path to solution") = None,
@@ -162,7 +159,7 @@ def init(cfg):
         for name, (oj, pid) in find_solutions(filename):
             env, code = await cfg.ReadSubmission(name, recompile)
             message, extra = await profile.submit(oj, pid, env, code, agent)
-            print(message)
+            logger.info("%.0s %s", message, name)
             print(extra)
 
     @task("Remove {filename}")
@@ -174,7 +171,7 @@ def init(cfg):
         else:
             os.remove(path)
 
-    @task("Remove {filename}", level=logging.DEBUG)
+    @task("Remove {filename}")
     async def RemoveOutput(filename, rootdir=None):
         from glob import escape, iglob
         dirname = escape(os.path.join(os.path.dirname(filename), "target"))

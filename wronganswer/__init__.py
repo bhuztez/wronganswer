@@ -64,9 +64,7 @@ async def _main(mod, argv):
     async def Test(argv: Argument(nargs='+'),
              names: Argument("--only", nargs='+', required=False) = None):
         '''run test locally'''
-        reader = await profile.testcases(oj, pid)
-        for name in names or reader:
-            await profile.run_test(oj, pid, name, argv)
+        await profile.run_tests(oj, pid, names, argv)
 
     @command
     @task(f"Submit {{filename}}, solution to problem {pid} in {{env}}, to {oj}")
@@ -81,7 +79,7 @@ async def _main(mod, argv):
                 data = f.read()
 
         message, extra = await profile.submit(oj, pid, env, data, agent)
-        print(message)
+        logger.info("%.0s %s", message, name)
         print(extra)
 
     cmd, args = command.parse(argv[1:], "list")

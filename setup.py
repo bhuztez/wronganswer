@@ -38,6 +38,6 @@ setup(
         ]},
 
     install_requires = ['miasma'],
-    dependency_links=['git+https://github.com/bhuztez/miasma@1e23061633e2d23b3e58ff48cd00dbde1ec830d7#egg=miasma-0.0'],
+    dependency_links=['git+https://github.com/bhuztez/miasma@89459a1d0ef827f15ac318c7ae97d75d30c36b84#egg=miasma-0.0'],
     zip_safe = False,
 )

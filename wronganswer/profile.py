@@ -43,6 +43,14 @@ class Persistable(ABC):
 def testcases(client, oj, pid, writer):
     return client.testcases(pid, writer)
 
+@task("Check against testcase {name}")
+async def run_test(name, argv, input, output):
+    logger.debug("%.0s `%s`", "Running", quote_argv(argv))
+    p = Popen(argv,stdin=PIPE,stdout=PIPE)
+    got, _ = p.communicate(input.read())
+    assert p.returncode == 0, "Exit code = {}".format(p.returncode)
+    assert compare_output(got, output.read()), "Wrong Answer"
+
 def index_of(l, x):
     try:
         return l.index(x)
@@ -126,15 +134,12 @@ class Profile:
             reader = self.cache_store.get(key, pid)
         return reader
 
-    @task("Check against testcase {name}")
-    async def run_test(self, oj, pid, name, argv):
+    @task("Test solution of problem {pid} of {oj}")
+    async def run_tests(self, oj, pid, names, argv):
         reader = await self.testcases(oj, pid)
-        input, output = reader[name]
-        logger.debug(quote_argv(argv))
-        p = Popen(argv,stdin=PIPE,stdout=PIPE)
-        got, _ = p.communicate(input.read())
-        assert p.returncode == 0, "Exit code = {}".format(p.returncode)
-        assert compare_output(got, output.read()), "Wrong Answer"
+        for name in names or reader:
+            input, output = reader[name]
+            await run_test(name, argv, input, output)
 
     def raw_submit(self, oj, pid, env, code, agent="localhost"):
         logger.debug("%s", self.get_env(oj, env))
