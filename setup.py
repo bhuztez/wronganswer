@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'wronganswer',
-    version = '0.0',
+    version = '0.1.0',
 
     url = 'https://github.com/bhuztez/wronganswer',
     description = 'online judge clients',
@@ -38,6 +38,4 @@ setup(
         ]},
 
     install_requires = ['miasma'],
-    dependency_links=['git+https://github.com/bhuztez/miasma@89459a1d0ef827f15ac318c7ae97d75d30c36b84#egg=miasma-0.0'],
-    zip_safe = False,
 )
