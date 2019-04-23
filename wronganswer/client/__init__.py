@@ -3,11 +3,15 @@ from abc import ABC, abstractmethod
 class Client(ABC):
 
     @abstractmethod
-    def submit(self, pid, env, code):
+    async def pid(self, o):
         pass
 
     @abstractmethod
-    def status(self, token):
+    async def submit(self, pid, env, code):
+        pass
+
+    @abstractmethod
+    async def status(self, token):
         pass
 
     async def prologue(self, pid):

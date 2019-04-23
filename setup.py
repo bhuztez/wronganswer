@@ -35,6 +35,7 @@ setup(
         [ 'judge.u-aizu.ac.jp = wronganswer.client.AOJ:AOJClient',
           'leetcode.com = wronganswer.client.LC:LeetcodeClient',
           'leetcode-cn.com = wronganswer.client.LC:LeetcodeClient',
+          'poj.org = wronganswer.client.POJ:POJClient',
         ]},
 
     install_requires = ['miasma'],

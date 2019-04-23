@@ -2,8 +2,11 @@ from io import StringIO
 from http.cookiejar import LWPCookieJar
 from urllib.request import build_opener, Request, HTTPCookieProcessor, BaseHandler, AbstractHTTPHandler
 from urllib.parse import urlencode
+from http.client import HTTPResponse
 import json
 from email.message import Message, _parseparam
+from html.parser import HTMLParser
+from xml.etree.ElementTree import TreeBuilder, XML
 import logging
 from . import task
 from .profile import AuthError, Persistable
@@ -30,6 +33,13 @@ class Field(Message):
         self.set_payload(text,None)
 
 
+def parse_content_type(content_type):
+    content_type, *params = _parseparam(content_type)
+    main_type, subtype = content_type.split("/")
+    params = dict(param.split("=",1) for param in params)
+    return content_type, main_type, subtype, params
+
+
 def request(url, data=None, headers=None, method=None):
     if isinstance(url, Request):
         url.method = url.get_method()
@@ -40,9 +50,7 @@ def request(url, data=None, headers=None, method=None):
         if data is not None:
             url += '?' + urlencode(data)
         return Request(url, headers=headers, method=method or "GET")
-    content_type, *params = _parseparam(content_type)
-    main_type, subtype = content_type.split("/")
-    params = dict(param.split("=",1) for param in params)
+    content_type, main_type, subtype, params = parse_content_type(content_type)
     charset = params.get("charset", "ascii")
     if not isinstance(data, bytes):
         if subtype == 'json':
@@ -61,6 +69,41 @@ def request(url, data=None, headers=None, method=None):
             assert False, f"unknown Content-Type {content_type}"
     return Request(url, data, headers, method=method or "POST")
 
+
+class HTMLParser(HTMLParser):
+
+    def __init__(self, target):
+        super().__init__()
+        self.target = target
+
+    def handle_starttag(self, tag, attrs):
+        self.target.start(tag, dict(attrs))
+
+    def handle_endtag(self, tag):
+        self.target.end(tag)
+
+    def handle_data(self, data):
+        self.target.data(data)
+
+    def close(self):
+        return self.target.close()
+
+
+class Response(HTTPResponse):
+
+    def body(self):
+        data = self.read()
+        content_type = self.info().get('Content-Type', None)
+        if content_type is not None:
+            content_type, main_type, subtype, params = parse_content_type(content_type)
+            charset = params.get("charset", "ascii")
+            data = data.decode(charset)
+            if subtype == 'json':
+                data = json.loads(data)
+            elif subtype == 'html':
+                data = XML(data, parser=HTMLParser(TreeBuilder()))
+
+        return data
 
 USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
 
@@ -93,6 +136,7 @@ class HTTP(BaseHandler, Persistable):
         return self.http_request(request)
 
     def http_response(self, request, response):
+        response.__class__ = Response
         return response
 
     def https_response(self, request, response):

@@ -2,7 +2,7 @@ import sys
 from .asm import escape_source
 
 def init(cfg):
-    __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CheckOutput', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'Clean')
+    __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CheckOutput', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'SubmitSolution', 'Clean')
 
     import os
     import re
@@ -151,16 +151,20 @@ def init(cfg):
         env, code = await cfg.ReadSubmission(filename, recompile)
         print(code.decode())
 
-    @task("Submit {filename}")
-    async def Submit(agent: cfg.Argument("--agent", default='localhost') = 'localhost',
-                     recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
-                     filename: cfg.Argument(nargs='?', help="path to solution") = None):
+    @task("Submit {name}")
+    async def SubmitSolution(oj, pid, name, agent, recompile):
+        env, code = await cfg.ReadSubmission(name, recompile)
+        message, extra = await profile.submit(oj, pid, env, code, agent)
+        logger.info("%.0s %s", message, name)
+        print(extra)
+
+    @task("Submit")
+    async def Submit(filename: cfg.Argument(nargs='?', help="path to solution") = None,
+                     agent: cfg.Argument("--agent", default='localhost') = 'localhost',
+                     recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
         '''submit solution'''
         for name, (oj, pid) in find_solutions(filename):
-            env, code = await cfg.ReadSubmission(name, recompile)
-            message, extra = await profile.submit(oj, pid, env, code, agent)
-            logger.info("%.0s %s", message, name)
-            print(extra)
+            await SubmitSolution(oj, pid, name, agent, recompile)
 
     @task("Remove {filename}")
     async def RemoveFile(filename, rootdir=None):

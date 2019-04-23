@@ -16,6 +16,7 @@ class LeetcodeClient(HTTP, Client):
         return super().http_request(request)
 
     def http_response(self, request, response):
+        response = super().http_response(request, response)
         if response.getcode() == 403:
             raise AuthError()
         if response.getcode() == 429:
@@ -61,7 +62,7 @@ class LeetcodeClient(HTTP, Client):
               }
             },
             {"Content-Type": self.JSON})
-        questionId = json.loads(response.read())["data"]["question"]["questionId"]
+        questionId = response.body()["data"]["question"]["questionId"]
 
         response = await self.open(
             f"https://{self.netloc}/problems/{pid}/submit/",
@@ -69,14 +70,14 @@ class LeetcodeClient(HTTP, Client):
               "question_id": questionId,
               "lang": env },
             {"Content-Type": self.JSON})
-        submission_id = json.loads(response.read())["submission_id"]
+        submission_id = response.body()["submission_id"]
         return f"https://{self.netloc}/submissions/detail/{submission_id}/"
 
     async def status(self, token):
         token = urlparse(token).path.rstrip("/").rsplit("/", 1)[1]
         response = await self.open(f"https://{self.netloc}/submissions/detail/{token}/check/")
 
-        data = json.loads(response.read())
+        data = response.body()
         state = data["state"]
 
         if state != "SUCCESS":
@@ -107,7 +108,7 @@ class LeetcodeClient(HTTP, Client):
             },
             {"Content-Type": self.JSON})
 
-        for s in json.loads(response.read())["data"]["question"]["codeSnippets"]:
+        for s in response.body()["data"]["question"]["codeSnippets"]:
             if s['langSlug'] == env:
                 return s['code']
 

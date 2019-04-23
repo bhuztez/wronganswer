@@ -26,9 +26,9 @@ STATUS = {
 class AOJClient(HTTP, Client):
 
     def http_response(self, request, response):
+        response = super().http_response(request, response)
         if response.getcode() == 400:
-            body = response.read()
-            error = json.loads(body)[0]
+            error = response.body()[0]
             # 1102: INVALID_REFRESH_TOKEN_ERROR
             # 1401: USER_NOT_FOUND_ERROR
             if error["id"] in (1102,1401):
@@ -40,13 +40,13 @@ class AOJClient(HTTP, Client):
 
     async def testcase(self, pid, serial):
         response = await self.open(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/{serial}")
-        data = json.loads(response.read().decode("utf-8"))
+        data = response.body()
         if not data["in"].endswith(LIMITATION) and not data["out"].endswith(LIMITATION):
             return data
 
     async def testcases(self, pid, writer):
         response = await self.open(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/header")
-        headers = json.loads(response.read().decode())["headers"]
+        headers = response.body()["headers"]
         assert len(headers) > 1 or (headers[0]["inputSize"] + headers[0]["outputSize"] > 0)
 
         for case in headers:
@@ -85,7 +85,7 @@ class AOJClient(HTTP, Client):
 
         token = json.loads(response.read())['token']
         response = await self.open("https://judgeapi.u-aizu.ac.jp/submission_records/recent")
-        data = json.loads(response.read())
+        data = response.body()
 
         for item in data:
             if item["token"] == token:
@@ -96,7 +96,7 @@ class AOJClient(HTTP, Client):
         token = parse_qs(urlparse(token).query)["rid"][0]
 
         response = await self.open(f"https://judgeapi.u-aizu.ac.jp/verdicts/{token}")
-        data = json.loads(response.read())["submissionRecord"]
+        data = response.body()["submissionRecord"]
         status = data["status"]
         message = STATUS[status]
 

@@ -24,6 +24,8 @@ def cc_argv(mode, target, filename, *libs):
         yield from ('-target', target)
     if mode == 'release':
         yield from ('-Os', '-S')
+    if VERBOSE:
+        yield '-v'
     yield from ('-Wall','-Wextra','-Werror')
     yield from ("-x", "c")
     yield from ("-o", dest_filename(mode, target, filename))
