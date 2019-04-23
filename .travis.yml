@@ -3,6 +3,14 @@ language: python
 python:
 - 3.6
 - 3.7-dev
+addons:
+  apt:
+    sources:
+    - llvm-toolchain-trusty-5.0
+    packages:
+    - clang-5.0
+    - mingw-w64-i686-dev
+    - mingw-w64-x86-64-dev
 
 matrix:
   include:
@@ -13,6 +21,7 @@ matrix:
     - curl -Lo python.pkg https://www.python.org/ftp/python/3.6.6/python-3.6.6-macosx10.6.pkg
     - sudo installer -pkg python.pkg -target /
     - /Applications/Python\ 3.6/Install\ Certificates.command
+    - brew install mingw-w64
     - export PATH="$PATH:/Library/Frameworks/Python.framework/Versions/3.6/bin"
   allow_failures:
   - python: "3.7-dev"
