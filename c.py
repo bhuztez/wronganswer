@@ -20,7 +20,7 @@ import sys
 SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
 
 def mingw_include(target):
-    if 'windows' not in target:
+    if target is None or 'windows' not in target:
         return
     arch = target.split('-', 1)[0]
     if sys.platform == 'linux':
@@ -28,7 +28,7 @@ def mingw_include(target):
         for name in 'include', 'sys-root/mingw/include':
             yield from ('-isystem', os.path.join(prefix, name))
     elif sys.platform == 'darwin':
-        import json
+        import json, subprocess
         info = json.loads(subprocess.check_output(["brew", "info", "--json=v1", "mingw-w64"]))[0]
         cellar = info["bottle"]["stable"]["cellar"]
         version = info["linked_keg"]

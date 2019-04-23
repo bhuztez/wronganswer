@@ -60,7 +60,7 @@ class POJClient(HTTP, Client):
         return "http://poj.org/showsource?" + urlencode({"solution_id": sid})
 
     async def get_last_sid(self, pid, env):
-        status_list = await self.status_list(self._credential["user_id1"], pid, env)
+        status_list = await self.status_list()
         if status_list:
             return status_list[0]["sid"]
 
