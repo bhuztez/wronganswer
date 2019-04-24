@@ -32,7 +32,7 @@ def mingw_include(target):
         info = json.loads(subprocess.check_output(["brew", "info", "--json=v1", "mingw-w64"]))[0]
         cellar = info["bottle"]["stable"]["cellar"]
         version = info["linked_keg"]
-        yield ('-isystem', os.path.join(cellar, 'mingw-w64', version, 'toolchain-'+arch, arch + '-w64-mingw32', 'include'))
+        yield from ('-isystem', os.path.join(cellar, 'mingw-w64', version, 'toolchain-'+arch, arch + '-w64-mingw32', 'include'))
 
 
 def cc_argv(mode, target, filename, *libs):
