@@ -7,6 +7,10 @@ from . import Client
 
 
 class POJClient(HTTP, Client):
+    CREDENTIAL: [
+        ("user_id1", "User ID", False),
+        ("password1", "Password", True)
+    ]
 
     def http_response(self, request, response):
         response = super().http_response(request, response)
@@ -20,16 +24,9 @@ class POJClient(HTTP, Client):
     async def pid(self, o):
         return parse_qs(o.query)["id"][0]
 
-    async def login(self, credential: [
-            ("user_id1", "User ID", False),
-            ("password1", "Password", True)]):
-        if credential is not None:
-            self._credential = credential
-        if self._credential is None:
-            raise AuthError("Credential not provided")
-
+    async def login(self):
         data = {"B1": "login", "url": "/status"}
-        data.update(self._credential)
+        data.update(self.credential)
         await self.raw_open("http://poj.org/login", data, {'Content-Type': self.URLENCODE})
         response = await self.raw_open("http://poj.org/submit")
         if response.read().startswith(b"<form method=POST action=login>"):
@@ -65,7 +62,7 @@ class POJClient(HTTP, Client):
             return status_list[0]["sid"]
 
     async def get_first_sid_since(self, pid, env, last_sid, code):
-        status_list = await self.status_list(self._credential["user_id1"], pid, env, last_sid)
+        status_list = await self.status_list(self.credential["user_id1"], pid, env, last_sid)
         status_list.reverse()
         for s in status_list:
             submission = await self.submission(s["sid"])

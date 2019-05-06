@@ -117,7 +117,7 @@ class HTTP(BaseHandler, Persistable):
         self.profile = profile
         self.netloc = netloc
         self._cookiejar = LWPCookieJar()
-        self._credential = None
+        self.credential = None
         opener = build_opener()
         for h in (HTTPCookieProcessor(self._cookiejar),
                   self):
@@ -144,14 +144,14 @@ class HTTP(BaseHandler, Persistable):
 
     def __getstate__(self):
         state = {"cookie": self._cookiejar.as_lwp_str()}
-        if self._credential:
-            state["credential"] = self._credential
+        if self.credential:
+            state["credential"] = self.credential
         return json.dumps(state)
 
     def __setstate__(self, state):
         state = json.loads(state)
         self._cookiejar._really_load(StringIO("#LWP-Cookies-2.0\n" + state["cookie"]), "cookies.txt",True,True)
-        self._credential = state.get("credential", None)
+        self.credential = state.get("credential", None)
 
     def get_cookie(self, name):
         for cookie in self._cookiejar:

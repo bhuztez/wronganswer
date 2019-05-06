@@ -7,6 +7,9 @@ from . import Client
 
 
 class LeetcodeClient(HTTP, Client):
+    CREDENTIAL: [
+        ("login", "Username or E-mail", False),
+        ("password", "Password", True)]
 
     def http_request(self, request):
         request.add_header('Referer', f'https://{self.netloc}/')
@@ -26,16 +29,9 @@ class LeetcodeClient(HTTP, Client):
     async def pid(self, o):
         return o.path.strip("/").split("/",2)[1]
 
-    async def login(self, credential: [
-            ("login", "Username or E-mail", False),
-            ("password", "Password", True)]):
-        if credential is not None:
-            self._credential = credential
-        if self._credential is None:
-            raise AuthError("Credential not provided")
-
+    async def login(self):
         data = {"csrfmiddlewaretoken": await self.get_csrftoken()}
-        data.update(self._credential)
+        data.update(self.credential)
 
         await self.raw_open(
             f"https://{self.netloc}/accounts/login/",

@@ -24,6 +24,10 @@ STATUS = {
 
 
 class AOJClient(HTTP, Client):
+    CREDENTIAL: [
+        ("id", "User ID", False),
+        ("password", "Password", True)
+    ]
 
     def http_response(self, request, response):
         response = super().http_response(request, response)
@@ -59,17 +63,10 @@ class AOJClient(HTTP, Client):
 
         writer.save()
 
-    async def login(self, credential: [
-            ("id", "User ID", False),
-            ("password", "Password", True)]):
-        if credential is not None:
-            self._credential = credential
-        if self._credential is None:
-            raise AuthError("Credential not provided")
-
+    async def login(self):
         await self.raw_open(
             "https://judgeapi.u-aizu.ac.jp/session",
-            self._credential,
+            self.credential,
             {'Content-Type': self.JSON})
 
     async def submit(self, pid, env, code):

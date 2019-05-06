@@ -187,10 +187,11 @@ class Profile:
 
     @task("Log into {netloc}", retry=True)
     async def auth(self, netloc, client):
-        cred = None
         while True:
             try:
-                await client.login(cred)
+                if client.credential is None:
+                    raise AuthError("Credential not provided")
+                await client.login()
                 if isinstance(client, Persistable):
                     self.state_store.store(netloc, client.__getstate__())
                 return
@@ -198,4 +199,4 @@ class Profile:
                 logger.warning("Login failed, %s", e)
                 if not self._get_credential:
                     raise
-                cred = self._get_credential(netloc, client.login.__annotations__['credential'])
+                client.credential = self._get_credential(netloc, client.__annotations__['CREDENTIAL'])
