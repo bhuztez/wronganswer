@@ -3,9 +3,6 @@ import sys
 from abc import ABC, abstractmethod
 from pkg_resources import load_entry_point
 from urllib.parse import urlparse
-from collections import namedtuple
-import csv
-from io import StringIO
 from subprocess import Popen, PIPE
 import logging
 from . import task
@@ -21,8 +18,6 @@ else:
         return " ".join(quote(a) for a in argv)
 
 logger = logging.getLogger(__package__)
-
-Env = namedtuple('Env', ['code','name','ver','os','arch','lang','lang_ver'])
 
 
 class AuthError(BaseException):
@@ -103,20 +98,6 @@ class Profile:
     def get_client(self, oj):
         return self.get_agent().get_client(oj)
 
-    def get_envs(self, oj):
-        try:
-            client = self.get_client(oj)
-        except AssertionError:
-            return []
-
-        for v in csv.reader(StringIO(client.submit.__doc__.strip())):
-            yield Env._make(v)
-
-    def get_env(self, oj, code):
-        for env in self.get_envs(oj):
-            if env.code == code:
-                return env
-
     @task("Extract problem ID from URL '{url}'")
     def pid(self, url):
         o = urlparse(url)
@@ -142,7 +123,7 @@ class Profile:
             await run_test(name, argv, input, output)
 
     def raw_submit(self, oj, pid, env, code, agent="localhost"):
-        logger.debug("%s", self.get_env(oj, env))
+        # logger.debug("%s", self.get_env(oj, env))
         return self.get_agent(agent).submit(oj, pid, env, code)
 
     @task("Check status of submission {token}")
@@ -158,8 +139,7 @@ class Profile:
         assert status, message
         return message, extra[0]
 
-    def _asm_pick_env(self, oj):
-        envs = self.get_envs(oj)
+    def _asm_pick_env(self, envs):
         envs = [c for c in envs
                 if c.lang == "C" and c.name in ("GCC", "MinGW")]
         envs.sort(key=lambda c:
@@ -170,12 +150,13 @@ class Profile:
             return envs[0]
 
     def asm_llvm_target(self, oj):
-        return llvm_target(self._asm_pick_env(oj))
+        client = self.get_client(oj)
+        return llvm_target(self._asm_pick_env(client.envs))
 
     @task("Escape assembly code")
     async def asm2c(self, oj, pid, source):
-        env = self._asm_pick_env(oj)
         client = self.get_client(oj)
+        env = self._asm_pick_env(client.envs)
         prologue = await client.prologue(pid)
         return env.code, prologue + escape_source(source)
 

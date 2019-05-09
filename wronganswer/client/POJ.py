@@ -12,6 +12,17 @@ class POJClient(HTTP, Client):
         ("password1", "Password", True)
     ]
 
+    ENV: (
+'''
+0,MinGW,4.4.0,Windows,x86,C++,C++03
+1,MinGW,4.4.0,Windows,x86,C,C99
+2,JDK,6,Windows,x86,Java,Java 6
+3,FreePascal,2.2.0,Windows,x86,Pascal,Free Pascal
+4,MSCV,2008,Windows,x86,C++,C++03
+5,MSCV,2008,Windows,x86,C,C99
+6,MinGW,4.4.0,Windows,x86,Fortran,Fortran 95
+''')
+
     def http_response(self, request, response):
         response = super().http_response(request, response)
         if request.get_method() == "POST":
@@ -34,15 +45,6 @@ class POJClient(HTTP, Client):
 
 
     async def submit(self, pid, env, code):
-        '''
-        0,MinGW,4.4.0,Windows,x86,C++,C++03
-        1,MinGW,4.4.0,Windows,x86,C,C99
-        2,JDK,6,Windows,x86,Java,Java 6
-        3,FreePascal,2.2.0,Windows,x86,Pascal,Free Pascal
-        4,MSCV,2008,Windows,x86,C++,C++03
-        5,MSCV,2008,Windows,x86,C,C99
-        6,MinGW,4.4.0,Windows,x86,Fortran,Fortran 95
-        '''
         env = env.lstrip()
         last_sid = await self.get_last_sid(pid, env)
         await self.open(

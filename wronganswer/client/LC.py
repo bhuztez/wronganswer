@@ -11,6 +11,11 @@ class LeetcodeClient(HTTP, Client):
         ("login", "Username or E-mail", False),
         ("password", "Password", True)]
 
+    ENV: (
+'''
+c,GCC,6.3,Linux,x86_64,C,C11
+''')
+
     def http_request(self, request):
         request.add_header('Referer', f'https://{self.netloc}/')
         request.add_header('X-Requested-With', 'XMLHttpRequest')
@@ -45,9 +50,6 @@ class LeetcodeClient(HTTP, Client):
 
 
     async def submit(self, pid, env, code):
-        '''
-        c,GCC,6.3,Linux,x86_64,C,C11
-        '''
         await self.get_csrftoken()
         response = await self.open(
             f"https://{self.netloc}/graphql",

@@ -29,6 +29,11 @@ class AOJClient(HTTP, Client):
         ("password", "Password", True)
     ]
 
+    ENV: (
+'''
+C,GCC,5.1.1,Linux,x86_64,C,C11
+''')
+
     def http_response(self, request, response):
         response = super().http_response(request, response)
         if response.getcode() == 400:
@@ -70,9 +75,6 @@ class AOJClient(HTTP, Client):
             {'Content-Type': self.JSON})
 
     async def submit(self, pid, env, code):
-        '''
-        C,GCC,5.1.1,Linux,x86_64,C,C11
-        '''
         response = await self.open(
             "https://judgeapi.u-aizu.ac.jp/submissions",
             { "sourceCode": code.decode(),
