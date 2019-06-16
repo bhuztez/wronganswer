@@ -43,13 +43,12 @@ mingw = BrewPackage("mingw-w64")
 class Clang:
 
     @lazy_property
-    def version(self):
+    def has_addrsig(self):
         import subprocess
-        info = subprocess.check_output(["clang", "--version"])
-        from distutils.version import LooseVersion
-        return LooseVersion(info.split(b' ', 3)[2].decode())
+        info = subprocess.check_output(["clang", "--help"])
+        return b'addrsig' in info
 
-clang = Clang().version
+clang = Clang()
 
 def mingw_include(target):
     if target is None or 'windows' not in target:
@@ -73,7 +72,7 @@ def cc_argv(mode, target, filename, *libs):
         yield '-v'
     yield from mingw_include(target)
     yield from ('-Wall','-Wextra','-Werror')
-    if clang.version[0] >= 8:
+    if clang.has_addrsig:
         yield '-fno-addrsig'
     yield from ("-x", "c")
     yield from ("-o", dest_filename(mode, target, filename))
