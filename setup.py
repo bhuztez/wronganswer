@@ -38,5 +38,5 @@ setup(
           'poj.org = wronganswer.client.POJ:POJClient',
         ]},
 
-    install_requires = ['miasma >= 0.1.1'],
+    install_requires = ['miasma >= 0.1.2'],
 )
