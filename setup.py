@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'wronganswer',
-    version = '0.1.1',
+    version = '0.1.2',
 
     url = 'https://github.com/bhuztez/wronganswer',
     description = 'online judge clients',
@@ -15,7 +15,7 @@ setup(
         "Environment :: Console",
         "License :: OSI Approved :: BSD License",
         "Operating System :: POSIX :: Linux",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3 :: Only",
     ],
 
@@ -38,5 +38,5 @@ setup(
           'poj.org = wronganswer.client.POJ:POJClient',
         ]},
 
-    install_requires = ['miasma'],
+    install_requires = ['miasma >= 0.1.1'],
 )

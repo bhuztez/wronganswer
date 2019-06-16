@@ -10,6 +10,8 @@ if __name__ == '__main__':
         ROOT=os.path.dirname(os.path.abspath(__file__))
         sys.path.append(os.path.dirname(ROOT)+"/miasma")
 
+    from miasma.utils import lazy_property
+
     from wronganswer.project import main
     main("Wrong Answer Project")
     quit()
@@ -18,6 +20,28 @@ import os
 import sys
 
 SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
+
+class BrewPackage:
+    def __init__(self, package):
+        self.package = package
+
+    @lazy_property
+    def info(self):
+        import json, subprocess
+        info = json.loads(subprocess.check_output(["brew", "info", "--json=v1", self.package]))[0]
+        cellar = info["bottle"]["stable"]["cellar"]
+        version = info["linked_keg"]
+        return cellar, version
+
+    @property
+    def cellar(self):
+        return self.info[0]
+
+    @property
+    def version(self):
+        return self.info[1]
+
+mingw = BrewPackage("mingw-w64")
 
 def mingw_include(target):
     if target is None or 'windows' not in target:
@@ -28,11 +52,7 @@ def mingw_include(target):
         for name in 'include', 'sys-root/mingw/include':
             yield from ('-isystem', os.path.join(prefix, name))
     elif sys.platform == 'darwin':
-        import json, subprocess
-        info = json.loads(subprocess.check_output(["brew", "info", "--json=v1", "mingw-w64"]))[0]
-        cellar = info["bottle"]["stable"]["cellar"]
-        version = info["linked_keg"]
-        yield from ('-isystem', os.path.join(cellar, 'mingw-w64', version, 'toolchain-'+arch, arch + '-w64-mingw32', 'include'))
+        yield from ('-isystem', os.path.join(mingw.cellar, 'mingw-w64', mingw.version, 'toolchain-'+arch, arch + '-w64-mingw32', 'include'))
 
 
 def cc_argv(mode, target, filename, *libs):
@@ -44,7 +64,7 @@ def cc_argv(mode, target, filename, *libs):
     if VERBOSE:
         yield '-v'
     yield from mingw_include(target)
-    yield from ('-Wall','-Wextra','-Werror')
+    yield from ('-Wall','-Wextra','-Werror','-fno-addrsig')
     yield from ("-x", "c")
     yield from ("-o", dest_filename(mode, target, filename))
     yield "-"
@@ -63,14 +83,13 @@ def get_run_argv(filename):
 
 
 @task("Read submission code of {name}")
-async def ReadSubmission(name, recompile):
+def ReadSubmission(name, recompile):
     oj, pid = get_solution_info(name)
     target = profile.asm_llvm_target(oj)
-    asm = await Compile(name, recompile, mode='release', target=target)
-    source = await ReadFile(asm)
-    env, source = await profile.asm2c(oj, pid, source)
+    asm = Compile(name, recompile, mode='release', target=target)
+    source = ReadFile(asm)
+    env, source = profile.asm2c(oj, pid, source)
     return env, source
-
 
 command(Compile)
 command(Run)

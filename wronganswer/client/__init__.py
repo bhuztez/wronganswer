@@ -8,6 +8,13 @@ Env = namedtuple('Env', ['code','name','ver','os','arch','lang','lang_ver'])
 
 class Client(ABC):
 
+    @abstractmethod
+    def pid(self, o):
+        pass
+
+
+class Judge(Client):
+
     def __init_subclass__(cls):
         super().__init_subclass__()
         cls.envs = [
@@ -16,16 +23,19 @@ class Client(ABC):
         ]
 
     @abstractmethod
-    async def pid(self, o):
+    def submit(self, pid, env, code):
         pass
 
     @abstractmethod
-    async def submit(self, pid, env, code):
+    def status(self, token):
         pass
 
-    @abstractmethod
-    async def status(self, token):
-        pass
-
-    async def prologue(self, pid):
+    def prologue(self, pid):
         return b''
+
+
+class Testcase(Client):
+
+    @abstractmethod
+    def testcases(self, pid, writer):
+        pass

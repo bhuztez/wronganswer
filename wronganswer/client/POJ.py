@@ -3,10 +3,11 @@ from urllib.parse import parse_qs, urlencode, urlparse
 from .. import task
 from ..profile import AuthError
 from ..http import HTTP
-from . import Client
+from . import Judge
 
 
-class POJClient(HTTP, Client):
+class POJClient(HTTP, Judge):
+    scheme = 'http'
     CREDENTIAL: [
         ("user_id1", "User ID", False),
         ("password1", "Password", True)
@@ -27,60 +28,60 @@ class POJClient(HTTP, Client):
         response = super().http_response(request, response)
         if request.get_method() == "POST":
             if not (response.getcode() == 302 and response.info()['location'] == 'http://poj.org/status'):
-                if b'Please login first.' in response.read():
+                if b'Please login first.' in response.body:
                     raise AuthError("Please login first.")
                 raise AuthError("Authentication Failed")
         return response
 
-    async def pid(self, o):
+    def pid(self, o):
         return parse_qs(o.query)["id"][0]
 
-    async def login(self):
+    def login(self):
         data = {"B1": "login", "url": "/status"}
         data.update(self.credential)
-        await self.raw_open("http://poj.org/login", data, {'Content-Type': self.URLENCODE})
-        response = await self.raw_open("http://poj.org/submit")
-        if response.read().startswith(b"<form method=POST action=login>"):
+        self.raw_open("/login", data, {'Content-Type': self.URLENCODE})
+        response = self.raw_open("/submit")
+        form = response.body.find(".[@action='login']")
+        if form is not None and form.tag == 'form':
             raise AuthError("Login Required")
 
-
-    async def submit(self, pid, env, code):
+    def submit(self, pid, env, code):
         env = env.lstrip()
-        last_sid = await self.get_last_sid(pid, env)
-        await self.open(
-            "http://poj.org/submit",
+        last_sid = self.get_last_sid(pid, env)
+        self.open(
+            "/submit",
             { "source": b64encode(code),
               "problem_id": pid,
               "language": env,
               "submit": "Submit",
               "encoded": "1"},
             {'Content-Type': self.URLENCODE})
-        sid = await self.get_first_sid_since(pid, env, last_sid, code)
+        sid = self.get_first_sid_since(pid, env, last_sid, code)
         return "http://poj.org/showsource?" + urlencode({"solution_id": sid})
 
-    async def get_last_sid(self, pid, env):
-        status_list = await self.status_list()
+    def get_last_sid(self, pid, env):
+        status_list = self.status_list()
         if status_list:
             return status_list[0]["sid"]
 
-    async def get_first_sid_since(self, pid, env, last_sid, code):
-        status_list = await self.status_list(self.credential["user_id1"], pid, env, last_sid)
+    def get_first_sid_since(self, pid, env, last_sid, code):
+        status_list = self.status_list(self.credential["user_id1"], pid, env, last_sid)
         status_list.reverse()
         for s in status_list:
-            submission = await self.submission(s["sid"])
+            submission = self.submission(s["sid"])
             if code == submission:
                 return s["sid"]
 
-    async def submission(self, sid):
-        response = await self.open(
-            "http://poj.org/showsource",
+    def submission(self, sid):
+        response = self.open(
+            "/showsource",
             {"solution_id": sid})
-        html = response.body()
+        html = response.body
         return html.findtext(".//pre").encode()
 
-    async def status_list(self, uid=None, pid=None, env=None, bottom=None, top=None, result=None):
-        response = await self.open(
-            "http://poj.org/status",
+    def status_list(self, uid=None, pid=None, env=None, bottom=None, top=None, result=None):
+        response = self.open(
+            "/status",
             { "problem_id": pid or "",
               "user_id": uid or "",
               "result": result or "",
@@ -88,7 +89,7 @@ class POJClient(HTTP, Client):
               "bottom": bottom or "",
               "top": top or ""})
 
-        html = response.body()
+        html = response.body
         return [
             { "sid": tr.findtext("./td[1]"),
               "uid": tr.findtext("./td[2]/a"),
@@ -101,14 +102,17 @@ class POJClient(HTTP, Client):
             }
             for tr in html.findall(".//table[@class='a']/tr[@align='center']")]
 
-
-    async def status(self, token):
+    def status(self, token):
         token = parse_qs(urlparse(token).query)["solution_id"][0]
         sid = int(token)
-        status_list = await self.status_list(top=sid+1)
+        status_list = self.status_list(top=sid+1)
         status = status_list[0]
         if status["color"] == 'blue':
-            return True, status["status"], "Memory: {memory} Time: {runtime} Size: {size}".format(**status)
+            return (True,
+                    status["status"],
+                    {'memory': status['memory'],
+                     'runtime': status['runtime'],
+                     'codesize': status['size']})
         elif status["color"] == 'green' and status["status"] != 'Compile Error':
             return None, status["status"]
         else:

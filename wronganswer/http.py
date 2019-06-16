@@ -1,12 +1,13 @@
 from io import StringIO
 from http.cookiejar import LWPCookieJar
 from urllib.request import build_opener, Request, HTTPCookieProcessor, BaseHandler, AbstractHTTPHandler
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse, urlunparse
 from http.client import HTTPResponse
 import json
 from email.message import Message, _parseparam
 from html.parser import HTMLParser
 from xml.etree.ElementTree import TreeBuilder, XML
+from miasma.utils import lazy_property
 import logging
 from . import task
 from .profile import AuthError, Persistable
@@ -39,11 +40,16 @@ def parse_content_type(content_type):
     params = dict(param.split("=",1) for param in params)
     return content_type, main_type, subtype, params
 
+def normalize_url(scheme, netloc, url):
+    o = urlparse(url)
+    return urlunparse(o._replace(scheme=o.scheme or scheme, netloc=o.netloc or netloc))
 
-def request(url, data=None, headers=None, method=None):
+def request(scheme, netloc, url, data=None, headers=None, method=None):
     if isinstance(url, Request):
+        url.fullurl = normalize_url(scheme, netloc, url.fullurl)
         url.method = url.get_method()
         return url
+    url = normalize_url(scheme, netloc, url)
     headers = headers or {}
     content_type = headers.get('Content-Type', None)
     if content_type is None:
@@ -91,6 +97,7 @@ class HTMLParser(HTMLParser):
 
 class Response(HTTPResponse):
 
+    @lazy_property
     def body(self):
         data = self.read()
         content_type = self.info().get('Content-Type', None)
@@ -109,6 +116,7 @@ USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit
 
 
 class HTTP(BaseHandler, Persistable):
+    scheme = 'https'
     JSON = 'application/json; charset=UTF-8'
     URLENCODE = 'application/x-www-form-urlencoded; charset=UTF-8'
     FORMDATA = 'multipart/form-data'
@@ -117,6 +125,7 @@ class HTTP(BaseHandler, Persistable):
         self.profile = profile
         self.netloc = netloc
         self._cookiejar = LWPCookieJar()
+        self._auth_required = False
         self.credential = None
         opener = build_opener()
         for h in (HTTPCookieProcessor(self._cookiejar),
@@ -158,21 +167,31 @@ class HTTP(BaseHandler, Persistable):
             if cookie.name == name:
                 return cookie.value
 
+    def _do_open(self, request):
+        try:
+            self.set_http_debuglevel(self.profile.debug)
+            return self.parent.open(request)
+        except AuthError:
+            request.remove_header("Cookie")
+            raise
+
     @task("HTTP {request.method} {request.full_url}", retry=True)
-    async def _open(self, request, raw=False):
-        while True:
-            try:
-                self.set_http_debuglevel(self.profile.debug)
-                return self.parent.open(request)
-            except AuthError as e:
-                logger.warning("Login required, %s", e)
-                if raw:
-                    raise
-                await self.profile.auth(self.netloc, self)
-                request.remove_header("Cookie")
+    def _open(self, request):
+        if self._auth_required:
+            self.profile.auth(self)
+            self._auth_required = False
+        try:
+            return self._do_open(request)
+        except AuthError as e:
+            self._auth_required = True
+            assert False, str(e)
+
+    @task("HTTP {request.method} {request.full_url}", retry=True)
+    def _raw_open(self, request):
+        return self._do_open(request)
 
     def open(self, url, data=None, headers=None, method=None):
-        return self._open(request(url, data, headers, method))
+        return self._open(request(self.scheme, self.netloc, url, data, headers, method))
 
     def raw_open(self, url, data=None, headers=None, method=None):
-        return self._open(request(url, data, headers, method), raw=True)
+        return self._raw_open(request(self.scheme, self.netloc, url, data, headers, method))

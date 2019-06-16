@@ -3,10 +3,10 @@ from urllib.parse import urlparse
 from time import sleep
 from ..profile import AuthError
 from ..http import HTTP
-from . import Client
+from . import Judge
 
 
-class LeetcodeClient(HTTP, Client):
+class LeetcodeClient(HTTP, Judge):
     CREDENTIAL: [
         ("login", "Username or E-mail", False),
         ("password", "Password", True)]
@@ -31,28 +31,28 @@ c,GCC,6.3,Linux,x86_64,C,C11
             sleep(10)
         return response
 
-    async def pid(self, o):
+    def pid(self, o):
         return o.path.strip("/").split("/",2)[1]
 
-    async def login(self):
-        data = {"csrfmiddlewaretoken": await self.get_csrftoken()}
+    def login(self):
+        data = {"csrfmiddlewaretoken": self.get_csrftoken()}
         data.update(self.credential)
 
-        await self.raw_open(
-            f"https://{self.netloc}/accounts/login/",
+        self.raw_open(
+            "/accounts/login/",
             data,
             {'Content-Type': self.URLENCODE})
 
-    async def get_csrftoken(self):
+    def get_csrftoken(self):
         if self.get_cookie("csrftoken") is None:
-            await self.raw_open(f"https://{self.netloc}/")
+            self.raw_open("/")
         return self.get_cookie("csrftoken")
 
 
-    async def submit(self, pid, env, code):
-        await self.get_csrftoken()
-        response = await self.open(
-            f"https://{self.netloc}/graphql",
+    def submit(self, pid, env, code):
+        self.get_csrftoken()
+        response = self.open(
+            "/graphql",
             { "operationName": "questionData",
               "query": "query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId } }",
               "variables": {
@@ -60,22 +60,22 @@ c,GCC,6.3,Linux,x86_64,C,C11
               }
             },
             {"Content-Type": self.JSON})
-        questionId = response.body()["data"]["question"]["questionId"]
+        questionId = response.body["data"]["question"]["questionId"]
 
-        response = await self.open(
-            f"https://{self.netloc}/problems/{pid}/submit/",
+        response = self.open(
+            f"/problems/{pid}/submit/",
             { "typed_code": code.decode(),
               "question_id": questionId,
               "lang": env },
             {"Content-Type": self.JSON})
-        submission_id = response.body()["submission_id"]
+        submission_id = response.body["submission_id"]
         return f"https://{self.netloc}/submissions/detail/{submission_id}/"
 
-    async def status(self, token):
+    def status(self, token):
         token = urlparse(token).path.rstrip("/").rsplit("/", 1)[1]
-        response = await self.open(f"https://{self.netloc}/submissions/detail/{token}/check/")
+        response = self.open(f"/submissions/detail/{token}/check/")
 
-        data = response.body()
+        data = response.body
         state = data["state"]
 
         if state != "SUCCESS":
@@ -84,9 +84,10 @@ c,GCC,6.3,Linux,x86_64,C,C11
         msg = data["status_msg"]
         code = data["status_code"]
         if code == 10:
-            memory = data["status_memory"]
-            runtime = data["status_runtime"]
-            return True, msg, f"Memory: {memory}, Time: {runtime}"
+            return (True,
+                    msg,
+                    {'memory': data["status_memory"],
+                     'runtime': data["status_runtime"]})
 
         error = "full_" + "_".join(s.lower() for s in msg.split())
         if error in data:
@@ -94,10 +95,10 @@ c,GCC,6.3,Linux,x86_64,C,C11
 
         return False, msg
 
-    async def snippet(self, pid, env):
-        await self.get_csrftoken()
-        response = await self.open(
-            f"https://{self.netloc}/graphql",
+    def snippet(self, pid, env):
+        self.get_csrftoken()
+        response = self.open(
+            "/graphql",
             { "operationName": "questionData",
               "query": "query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { codeSnippets { langSlug code } } }",
               "variables": {
@@ -106,12 +107,12 @@ c,GCC,6.3,Linux,x86_64,C,C11
             },
             {"Content-Type": self.JSON})
 
-        for s in response.body()["data"]["question"]["codeSnippets"]:
+        for s in response.body["data"]["question"]["codeSnippets"]:
             if s['langSlug'] == env:
                 return s['code']
 
-    async def prologue(self, pid):
-        snippet = await self.snippet(pid, 'c')
+    def prologue(self, pid):
+        snippet = self.snippet(pid, 'c')
         snippet = snippet.rstrip()
         assert snippet.endswith("}")
         snippet = snippet[:-1].rstrip()

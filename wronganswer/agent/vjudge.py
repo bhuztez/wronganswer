@@ -1,5 +1,5 @@
 from base64 import b64encode
-from urllib.parse import urlparse, quote_from_bytes
+from urllib.parse import urlparse, urlencode, quote_from_bytes, parse_qsl
 import logging
 import json
 from ..profile import AuthError
@@ -11,77 +11,86 @@ logger = logging.getLogger(__package__)
 
 ONLINE_JUDGES = {
     'judge.u-aizu.ac.jp': 'Aizu',
+    'poj.org': 'POJ',
 }
 
 
 class VjudgeAgent(HTTP, Agent):
-    CREDENTIAL = [
+    CREDENTIAL: [
         ("username", "Username or Email", False),
         ("password", "Password", True)
     ]
 
+    def __init__(self, profile, netloc):
+        super().__init__(profile, netloc)
+        self._captcha_required = False
+
     def http_request(self, request):
         request.add_header('Referer', f'https://{self.netloc}/')
         request.add_header('X-Requested-With', 'XMLHttpRequest')
+        if self._captcha_required == True and request.get_header('Content-type', None) == self.URLENCODE:
+            qs = parse_qsl(request.data)
+            captcha = self.captcha()
+            request.data = urlencode(qs + [("captcha", captcha)]).encode()
         return super().http_request(request)
 
-    async def login(self):
-        response = await self.raw_open(
-            f"https://{self.netloc}/user/login",
+    def http_response(self, request, response):
+        response = super().http_response(request, response)
+        data = response.body
+        if isinstance(data, dict) and "error" in data:
+            if data.get("captcha", False):
+                self._captcha_required = True
+                assert False, "Captcha required"
+            else:
+                raise AuthError(data["error"])
+        return response
+
+    def login(self):
+        response = self.raw_open(
+            "/user/login",
             self.credential,
             {'Content-Type': self.URLENCODE})
-        body = response.read()
-        print(body)
-        if body != b"success":
+        body = response.body
+        if body != "success":
             raise AuthError(body)
 
-    async def _submit(self, oj, pid, env, code, captcha):
-        response = await self.open(
-            f"https://{self.netloc}/problem/submit",
+    def _submit(self, oj, pid, env, code):
+        response = self.open(
+            "/problem/submit",
             { "oj": ONLINE_JUDGES[oj],
               "probNum": pid,
               "language": env,
               "share": 0,
               "source": b64encode(quote_from_bytes(code).encode()),
-              "captcha": captcha,
-            },
+              "captcha": "" },
             {'Content-Type': self.URLENCODE})
-        data = json.loads(response.read())
-        if "error" in data:
-            if not data.get("captcha", False):
-                raise AuthError(data["error"])
-        return data
+        self._captcha_required = False
+        return response.body
 
-    async def captcha(self):
-        response = await self.open(f"https://{self.netloc}/util/serverTime", method="POST")
-        server_time = response.read()
-        response = await self.open(f"https://{self.netloc}/util/captcha?" + server_time.decode())
-        display(response.read())
+    def captcha(self):
+        response = self.open("/util/serverTime", method="POST")
+        server_time = response.body
+        response = self.open("/util/captcha?{response.body}")
+        display(response.body)
         return input("Captcha: ")
 
-    async def submit(self, oj, pid, env, code):
-        captcha = ""
-        while True:
-            try:
-                data = await self._submit(oj, pid, env, code, captcha)
-                if "error" not in data:
-                    runId = data["runId"]
-                    return f"https://{self.netloc}/solution/{runId}"
-                assert data.get("captcha", False)
-                captcha = await self.captcha()
-            except AuthError as e:
-                logger.warning("Login required, %s", e)
-                await self.profile.auth(self.netloc, self)
+    def submit(self, oj, pid, env, code):
+        data = self._submit(oj, pid, env, code)
+        if "error" not in data:
+            runId = data["runId"]
+            return f"https://{self.netloc}/solution/{runId}"
+        assert data.get("captcha", False)
+        assert False, "Captcha required"
 
-    async def status(self, oj, token):
+    def status(self, oj, token):
         token = urlparse(token).path.rstrip("/").rsplit("/",1)[1]
 
-        response = await self.open(
-            f"https://{self.netloc}/solution/data/{token}",
+        response = self.open(
+            f"/solution/data/{token}",
             { "showCode": "false" },
             {'Content-Type': self.URLENCODE})
 
-        data = json.loads(response.read())
+        data = response.body
         if data["processing"]:
             return None, data["status"]
         if data["statusType"] != 0:
@@ -89,4 +98,8 @@ class VjudgeAgent(HTTP, Agent):
         data.setdefault("memory", "N/A")
         data.setdefault("runtime", "N/A")
         data.setdefault("length", "N/A")
-        return True, data["status"], 'Memory: {memory}, Time: {runtime}, Length: {length}'.format(**data)
+        return (True,
+                data["status"],
+                {'memory': data['memory'],
+                 'runtime': data['runtime'],
+                 'codesize': data['length']})

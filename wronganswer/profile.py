@@ -3,19 +3,12 @@ import sys
 from abc import ABC, abstractmethod
 from pkg_resources import load_entry_point
 from urllib.parse import urlparse
-from subprocess import Popen, PIPE
+from miasma.subprocess import run, quote_argv
 import logging
 from . import task
 from .judge import compare_output
 from .asm import escape_source, llvm_target
-
-import platform
-if platform.system() == 'Windows':
-    from subprocess import list2cmdline as quote_argv
-else:
-    from pipes import quote
-    def quote_argv(argv):
-        return " ".join(quote(a) for a in argv)
+from .client import Judge, Testcase
 
 logger = logging.getLogger(__package__)
 
@@ -39,11 +32,9 @@ def testcases(client, oj, pid, writer):
     return client.testcases(pid, writer)
 
 @task("Check against testcase {name}")
-async def run_test(name, argv, input, output):
-    logger.debug("%.0s `%s`", "Running", quote_argv(argv))
-    p = Popen(argv,stdin=PIPE,stdout=PIPE)
-    got, _ = p.communicate(input.read())
-    assert p.returncode == 0, "Exit code = {}".format(p.returncode)
+def run_test(name, argv, input, output):
+    logger.debug("Running `%s`", quote_argv(argv))
+    got = run(argv, input=input.read(), capture_output=True, check=True).stdout
     assert compare_output(got, output.read()), "Wrong Answer"
 
 def index_of(l, x):
@@ -90,40 +81,40 @@ class Profile:
             except ImportError:
                 assert False, f"agent '{name}' not found"
             agent = klass(self, name)
-            self.load_state(name, agent)
+            self.load_state(agent)
             self.agents[name] = agent
 
         return self.agents[name]
 
-    def get_client(self, oj):
-        return self.get_agent().get_client(oj)
+    def get_client(self, oj, type=None):
+        return self.get_agent().get_client(oj, type)
 
     @task("Extract problem ID from URL '{url}'")
     def pid(self, url):
         o = urlparse(url)
         client = self.get_client(o.netloc)
-        return client.pid(o)
+        pid = client.pid(o)
+        return o.netloc, pid
 
     @task("Load testcases of problem {pid} of {oj}")
-    async def testcases(self, oj, pid):
-        client = self.get_client(oj)
+    def testcases(self, oj, pid):
+        client = self.get_client(oj, Testcase)
         key = getattr(client, 'CACHE_KEY', oj)
         reader = self.cache_store.get(key, pid)
         if reader is None:
             writer = self.cache_store.create(key, pid)
-            await testcases(client, oj, pid, writer)
+            testcases(client, oj, pid, writer)
             reader = self.cache_store.get(key, pid)
         return reader
 
     @task("Test solution of problem {pid} of {oj}")
-    async def run_tests(self, oj, pid, names, argv):
-        reader = await self.testcases(oj, pid)
+    def run_tests(self, oj, pid, names, argv):
+        reader = self.testcases(oj, pid)
         for name in names or reader:
             input, output = reader[name]
-            await run_test(name, argv, input, output)
+            run_test(name, argv, input, output)
 
     def raw_submit(self, oj, pid, env, code, agent="localhost"):
-        # logger.debug("%s", self.get_env(oj, env))
         return self.get_agent(agent).submit(oj, pid, env, code)
 
     @task("Check status of submission {token}")
@@ -131,11 +122,11 @@ class Profile:
         return self.get_agent(agent).status(oj, token)
 
     @task("Submit solution to problem {pid} in {env} to {oj} via {agent}")
-    async def submit(self, oj, pid, env, code, agent="localhost"):
-        token = await self.raw_submit(oj, pid, env, code, agent)
+    def submit(self, oj, pid, env, code, agent="localhost"):
+        token = self.raw_submit(oj, pid, env, code, agent)
         status = None
         while status is None:
-            status, message, *extra = await self.status(oj, token)
+            status, message, *extra = self.status(oj, token, agent)
         assert status, message
         return message, extra[0]
 
@@ -150,34 +141,33 @@ class Profile:
             return envs[0]
 
     def asm_llvm_target(self, oj):
-        client = self.get_client(oj)
+        client = self.get_client(oj, Judge)
         return llvm_target(self._asm_pick_env(client.envs))
 
     @task("Escape assembly code")
-    async def asm2c(self, oj, pid, source):
-        client = self.get_client(oj)
+    def asm2c(self, oj, pid, source):
+        client = self.get_client(oj, Judge)
         env = self._asm_pick_env(client.envs)
-        prologue = await client.prologue(pid)
+        prologue = client.prologue(pid)
         return env.code, prologue + escape_source(source)
 
-    def load_state(self, netloc, client):
+    def load_state(self, client):
         if isinstance(client, Persistable):
-            state = self.state_store.load(netloc)
+            state = self.state_store.load(client.netloc)
             if state is not None:
                 client.__setstate__(state)
 
-    @task("Log into {netloc}", retry=True)
-    async def auth(self, netloc, client):
-        while True:
-            try:
-                if client.credential is None:
-                    raise AuthError("Credential not provided")
-                await client.login()
-                if isinstance(client, Persistable):
-                    self.state_store.store(netloc, client.__getstate__())
-                return
-            except AuthError as e:
-                logger.warning("Login failed, %s", e)
+    @task("Log into {client.netloc}", retry=True)
+    def auth(self, client):
+        try:
+            if client.credential is None:
                 if not self._get_credential:
-                    raise
-                client.credential = self._get_credential(netloc, client.__annotations__['CREDENTIAL'])
+                    raise AuthError("Credential not provided")
+                client.credential = self._get_credential(client.netloc, client.__annotations__['CREDENTIAL'])
+            client.login()
+            if isinstance(client, Persistable):
+                self.state_store.store(client.netloc, client.__getstate__())
+            return
+        except AuthError as e:
+            client.credential = None
+            assert False, str(e)

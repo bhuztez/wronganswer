@@ -3,7 +3,7 @@ from urllib.parse import urlparse, urlencode, parse_qs
 from .. import task
 from ..profile import AuthError
 from ..http import HTTP
-from . import Client
+from . import Judge, Testcase
 
 
 LIMITATION = "..... (terminated because of the limitation)\n"
@@ -23,7 +23,7 @@ STATUS = {
 }
 
 
-class AOJClient(HTTP, Client):
+class AOJClient(HTTP, Judge, Testcase):
     CREDENTIAL: [
         ("id", "User ID", False),
         ("password", "Password", True)
@@ -37,29 +37,29 @@ C,GCC,5.1.1,Linux,x86_64,C,C11
     def http_response(self, request, response):
         response = super().http_response(request, response)
         if response.getcode() == 400:
-            error = response.body()[0]
+            error = response.body[0]
             # 1102: INVALID_REFRESH_TOKEN_ERROR
             # 1401: USER_NOT_FOUND_ERROR
             if error["id"] in (1102,1401):
                 raise AuthError(error['message'])
         return response
 
-    async def pid(self, o):
+    def pid(self, o):
         return parse_qs(o.query)["id"][0]
 
-    async def testcase(self, pid, serial):
-        response = await self.open(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/{serial}")
-        data = response.body()
+    def testcase(self, pid, serial):
+        response = self.open(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/{serial}")
+        data = response.body
         if not data["in"].endswith(LIMITATION) and not data["out"].endswith(LIMITATION):
             return data
 
-    async def testcases(self, pid, writer):
-        response = await self.open(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/header")
-        headers = response.body()["headers"]
+    def testcases(self, pid, writer):
+        response = self.open(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/header")
+        headers = response.body["headers"]
         assert len(headers) > 1 or (headers[0]["inputSize"] + headers[0]["outputSize"] > 0)
 
         for case in headers:
-            data = await self.testcase(pid, case["serial"])
+            data = self.testcase(pid, case["serial"])
             if data is None:
                 continue
             for f, s in zip(writer.add(case["name"]), (data["in"], data["out"])):
@@ -68,41 +68,44 @@ C,GCC,5.1.1,Linux,x86_64,C,C11
 
         writer.save()
 
-    async def login(self):
-        await self.raw_open(
+    def login(self):
+        self.raw_open(
             "https://judgeapi.u-aizu.ac.jp/session",
             self.credential,
             {'Content-Type': self.JSON})
 
-    async def submit(self, pid, env, code):
-        response = await self.open(
+    def submit(self, pid, env, code):
+        response = self.open(
             "https://judgeapi.u-aizu.ac.jp/submissions",
             { "sourceCode": code.decode(),
               "language": env,
               "problemId": pid },
             {'Content-Type': self.JSON})
 
-        token = json.loads(response.read())['token']
-        response = await self.open("https://judgeapi.u-aizu.ac.jp/submission_records/recent")
-        data = response.body()
+        token = response.body['token']
+        response = self.open("https://judgeapi.u-aizu.ac.jp/submission_records/recent")
+        data = response.body
 
         for item in data:
             if item["token"] == token:
                 return "http://judge.u-aizu.ac.jp/onlinejudge/review.jsp?" + urlencode({"rid": item["judgeId"]}) + "#2"
         assert False
 
-    async def status(self, token):
+    def status(self, token):
         token = parse_qs(urlparse(token).query)["rid"][0]
 
-        response = await self.open(f"https://judgeapi.u-aizu.ac.jp/verdicts/{token}")
-        data = response.body()["submissionRecord"]
+        response = self.open(f"https://judgeapi.u-aizu.ac.jp/verdicts/{token}")
+        data = response.body["submissionRecord"]
         status = data["status"]
         message = STATUS[status]
 
         if status in (5, 9):
             return None, message
         elif status == 4:
-            return True, message, 'Memory: {memory}, Time: {cpuTime}, Length: {codeSize}'.format(**data)
-
+            return (True,
+                    message,
+                    {'memory': data['memory'],
+                     'runtime': data['cpuTime'],
+                     'codesize': data['codesize']})
         assert status >= 0
         return False, message

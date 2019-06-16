@@ -2,13 +2,13 @@ import sys
 from .asm import escape_source
 
 def init(cfg):
-    __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CheckOutput', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'SubmitSolution', 'Clean')
+    __all__ = ('target_dir', 'dest_filename', 'ROOTDIR', 'SOLUTIONS_DIR', 'profile', 'get_solution_info', 'find_solutions', 'ReadFile', 'ReadSource', 'RemoveOutput', 'RemoveFile', 'Call', 'CompileLibs', 'Compile', 'Run', 'Test', 'TestSolution', 'Preview', 'Submit', 'SubmitSolution', 'Clean')
 
     import os
     import re
-    from subprocess import Popen, PIPE, check_call, check_output
+    from miasma.subprocess import run, quote_argv
     import logging
-    from .profile import quote_argv, Profile
+    from .profile import Profile
 
     logger = logging.getLogger(__package__)
 
@@ -72,25 +72,21 @@ def init(cfg):
     profile = Profile()
 
     @task("Read {filename}")
-    async def ReadFile(filename):
+    def ReadFile(filename):
         with open(filename, 'rb') as f:
             return f.read()
 
-    async def Call(argv, *args, **kwargs):
+    def Call(argv, *args, **kwargs):
         logger.debug("Running `{}`".format(quote_argv(argv)))
-        return check_call(argv, *args, **kwargs)
-
-    async def CheckOutput(argv, *args, **kwargs):
-        logger.debug("Running `{}`".format(quote_argv(argv)))
-        return check_output(argv, *args, **kwargs)
+        return run(argv, *args, **kwargs)
 
     ReadSource = ReadFile
 
-    async def CompileLibs(mode='debug', target=None):
+    def CompileLibs(mode='debug', target=None):
         return ()
 
-    async def _compile(filename, recompile, mode, target, escape=False):
-        libs = await cfg.CompileLibs(mode, target)
+    def _compile(filename, recompile, mode, target, escape=False):
+        libs = cfg.CompileLibs(mode, target)
         dest, argv, env = cfg.get_compile_argv(mode, target, filename, *libs)
         if dest == filename:
             return filename
@@ -98,76 +94,72 @@ def init(cfg):
         if not (recompile or has_to_recompile(dest, filename, *libs)):
             return dest
 
-        source = await cfg.ReadSource(filename)
+        source = cfg.ReadSource(filename)
         if escape:
             source = escape_source(source)
 
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-
-        logger.debug("Running `{}`".format(quote_argv(argv)))
-        proc = Popen(argv,stdin=PIPE,env=env)
-        proc.communicate(source)
-        assert proc.returncode == 0
+        Call(argv, input=source, check=True)
         return dest
 
     @task("Compile {filename}")
-    async def Compile(filename: cfg.Argument(help="path to solution"),
+    def Compile(filename: cfg.Argument(help="path to solution"),
                       recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
                       mode = 'debug',
                       target = None):
         '''compile solution'''
-        dest = await _compile(filename, recompile, mode, target)
+        dest = _compile(filename, recompile, mode, target)
         if mode == 'release' and target is None:
-            dest = await _compile(dest, recompile, mode, target, True)
+            dest = _compile(dest, recompile, mode, target, True)
         return dest
 
     @task("Run {filename}")
-    async def Run(filename: cfg.Argument(help="path to solution"),
+    def Run(filename: cfg.Argument(help="path to solution"),
                   recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
         '''build solution'''
-        executable = await cfg.Compile(filename, recompile)
+        executable = cfg.Compile(filename, recompile)
         argv = cfg.get_run_argv(executable)
-        await cfg.Call(argv)
+        Call(argv)
 
     @task("Test {filename}")
-    async def TestSolution(oj, pid, filename, recompile, mode='debug', target=None):
-        executable = await cfg.Compile(filename, recompile, mode, target)
-        await profile.run_tests(oj, pid, [], cfg.get_run_argv(executable))
+    def TestSolution(oj, pid, filename, recompile, mode='debug', target=None):
+        executable = cfg.Compile(filename, recompile, mode, target)
+        profile.run_tests(oj, pid, [], cfg.get_run_argv(executable))
 
     @task("Test")
-    async def Test(filename: cfg.Argument(nargs='?', help="path to solution") = None,
+    def Test(filename: cfg.Argument(nargs='?', help="path to solution") = None,
                    recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
                    mode: cfg.Argument("--mode") = 'debug'):
         '''check solution against sample testcases'''
         for name, (oj, pid) in find_solutions(filename):
-            await cfg.TestSolution(oj, pid, name, recompile, mode)
+            cfg.TestSolution(oj, pid, name, recompile, mode)
 
     @task("Preview {filename}")
-    async def Preview(filename: cfg.Argument(help="path to solution"),
+    def Preview(filename: cfg.Argument(help="path to solution"),
                       recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
         '''preview the code to be submitted'''
         filename = relative_path(cfg.ROOTDIR, filename)
         oj, pid = cfg.get_solution_info(filename)
-        env, code = await cfg.ReadSubmission(filename, recompile)
+        env, code = cfg.ReadSubmission(filename, recompile)
         print(code.decode())
 
     @task("Submit {name}")
-    async def SubmitSolution(oj, pid, name, agent, recompile):
-        env, code = await cfg.ReadSubmission(name, recompile)
-        message, extra = await profile.submit(oj, pid, env, code, agent)
+    def SubmitSolution(oj, pid, name, agent, recompile):
+        env, code = cfg.ReadSubmission(name, recompile)
+        message, extra = profile.submit(oj, pid, env, code, agent)
         logger.info("%.0s %s", message, name)
         print(extra)
 
     @task("Submit")
-    async def Submit(filename: cfg.Argument(nargs='?', help="path to solution") = None,
+    def Submit(filename: cfg.Argument(nargs='?', help="path to solution") = None,
                      agent: cfg.Argument("--agent", default='localhost') = 'localhost',
                      recompile: cfg.Argument("-r", "--recompile", action="store_true", help="force recompile") = False):
         '''submit solution'''
         for name, (oj, pid) in find_solutions(filename):
-            await SubmitSolution(oj, pid, name, agent, recompile)
+            SubmitSolution(oj, pid, name, agent, recompile)
 
     @task("Remove {filename}")
-    async def RemoveFile(filename, rootdir=None):
+    def RemoveFile(filename, rootdir=None):
         path = os.path.join(rootdir or cfg.ROOTDIR, filename)
         if os.path.isdir(path):
             from shutil import rmtree
@@ -176,20 +168,20 @@ def init(cfg):
             os.remove(path)
 
     @task("Remove {filename}")
-    async def RemoveOutput(filename, rootdir=None):
+    def RemoveOutput(filename, rootdir=None):
         from glob import escape, iglob
         dirname = escape(os.path.join(os.path.dirname(filename), "target"))
         basename = escape(os.path.splitext(os.path.basename(filename))[0])
 
         for filename in iglob(f"{dirname}/**/{basename}.*", recursive=True):
-            await cfg.RemoveFile(filename)
+            cfg.RemoveFile(filename)
 
     @task("Clean")
-    async def Clean(filename:cfg.Argument(nargs='?', help="path to solution") = None):
+    def Clean(filename:cfg.Argument(nargs='?', help="path to solution") = None):
         """removes generated files"""
 
         for name,info in find_solutions(filename):
-            await cfg.RemoveOutput(name)
+            cfg.RemoveOutput(name)
 
     return cfg.__dict__.update(
         {k:v
@@ -197,7 +189,7 @@ def init(cfg):
          if k in __all__})
 
 
-async def _main(mod, argv):
+def _main(mod, argv):
     command = mod.command
     __main__ = sys.modules['__main__']
     filename = __main__.__file__
