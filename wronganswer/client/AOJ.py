@@ -82,7 +82,7 @@ C,GCC,5.1.1,Linux,x86_64,C,C11
               "problemId": pid },
             {'Content-Type': self.JSON})
 
-        token = response.body['token']
+        token = json.loads(response.body)['token']
         response = self.open("https://judgeapi.u-aizu.ac.jp/submission_records/recent")
         data = response.body
 
@@ -106,6 +106,6 @@ C,GCC,5.1.1,Linux,x86_64,C,C11
                     message,
                     {'memory': data['memory'],
                      'runtime': data['cpuTime'],
-                     'codesize': data['codesize']})
+                     'codesize': data['codeSize']})
         assert status >= 0
         return False, message
