@@ -49,13 +49,13 @@ To make life easier, you may put a configuration file in your project, to let Wr
 
 .. code-block:: console
 
-    $ ./c.py test
+    $ ./c.py test solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
 And to submit the solution
 
 .. code-block:: console
 
-    $ ./c.py submit
+    $ ./c.py submit solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
 Moreover, WrongAnswer can help you to compile your code locally and submit the assembly to the onlie judge. Run the following to see what is going to be submitted.
 

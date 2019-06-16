@@ -32,7 +32,7 @@ install:
 script:
 - wa -v --debug test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' -- echo 'Hello World'
 - wa -v --debug submit 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
-- wa -v --debug submit 'https://leetcode.com/problems/powx-n/' c examples/leetcode.com/powx-n.c
+- wa -v --debug submit 'https://leetcode.com/problems/powx-n/' c examples/leetcode.com/50-powx-n.c
 - wa -v --debug submit 'http://poj.org/problem?id=1000' 1 examples/poj.org/1000.c
 - ./c.py -v --debug test solutions
 - ./c.py -v --debug test --mode release solutions
