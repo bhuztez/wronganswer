@@ -48,19 +48,24 @@ c,GCC,6.3,Linux,x86_64,C,C11
             self.raw_open("/")
         return self.get_cookie("csrftoken")
 
-
     def submit(self, pid, env, code):
         self.get_csrftoken()
-        response = self.open(
-            "/graphql",
-            { "operationName": "questionData",
-              "query": "query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId } }",
-              "variables": {
-                  "titleSlug": pid
-              }
-            },
-            {"Content-Type": self.JSON})
-        questionId = response.body["data"]["question"]["questionId"]
+        parts = pid.split('-', 1)
+
+        if parts[0].isdigit():
+            questionId = int(parts[0])
+            pid = parts[1]
+        else:
+            response = self.open(
+                "/graphql",
+                { "operationName": "questionData",
+                  "query": "query questionData($titleSlug: String!) { question(titleSlug: $titleSlug) { questionId } }",
+                  "variables": {
+                      "titleSlug": pid
+                  }
+                },
+                {"Content-Type": self.JSON})
+            questionId = response.body["data"]["question"]["questionId"]
 
         response = self.open(
             f"/problems/{pid}/submit/",
@@ -97,6 +102,9 @@ c,GCC,6.3,Linux,x86_64,C,C11
 
     def snippet(self, pid, env):
         self.get_csrftoken()
+        parts = pid.split('-', 1)
+        if parts[0].isdigit():
+            pid = parts[1]
         response = self.open(
             "/graphql",
             { "operationName": "questionData",

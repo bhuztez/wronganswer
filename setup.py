@@ -4,11 +4,11 @@ from setuptools import setup
 
 setup(
     name = 'wronganswer',
-    version = '0.1.2',
+    version = '0.1.3',
 
     url = 'https://github.com/bhuztez/wronganswer',
     description = 'online judge clients',
-    license = 'BSD',
+    license = 'MIT',
 
     classifiers = [
         "Development Status :: 1 - Planning",

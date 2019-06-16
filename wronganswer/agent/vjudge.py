@@ -70,7 +70,7 @@ class VjudgeAgent(HTTP, Agent):
     def captcha(self):
         response = self.open("/util/serverTime", method="POST")
         server_time = response.body
-        response = self.open("/util/captcha?{response.body}")
+        response = self.open(f"/util/captcha?{response.body}")
         display(response.body)
         return input("Captcha: ")
 
