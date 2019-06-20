@@ -28,10 +28,23 @@ def llvm_target(env):
 EXTS = {
     ".c": "C",
     ".cpp": "C++",
+    ".cs": "C#",
     ".cxx": "C++",
+    ".d": "D",
     ".for": "Fortran",
+    ".hs": "Haskell",
+    ".go": "Go",
     ".java": "Java",
+    ".js": "ECMAScript",
+    ".kt": "Kotlin",
+    ".ml": "OCaml",
     ".pas": "Pascal",
+    ".php": "PHP",
+    ".py": "Python3",
+    ".rb": "Ruby",
+    ".rs": "Rust",
+    ".sc": "Scala",
+    ".swift": "Swift",
 }
 
 def guess_language(name):

@@ -20,7 +20,7 @@ python3,CPython,3.6.7,Linux,x86_64,Python3,Python 3.6
 c,GCC,6.3,Linux,x86_64,C,C11
 csharp,Mono,5.18.0,Linux,x86_64,C#,C# 7
 javascript,Node.js,10.15.0,Linux,x86_64,ECMAScript,ES6
-ruby,Ruby,2.4.5,Linux,x86_64,Ruby,2.4
+ruby,Ruby,2.4.5,Linux,x86_64,Ruby,Ruby 2.4
 swift,Swift,5.0.1,Linux,x86_64,Swift,Swift 5
 golang,Go,1.11.4,Linux,x86_64,Go,Go 1.11
 scala,OpenJDK,1.8.0,Linux,x86_64,Scala,Scala 2.11.12

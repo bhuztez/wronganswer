@@ -36,10 +36,10 @@ C++11,GCC,5.1.1,Linux,x86_64,C++,C++11
 C++14,GCC,5.1.1,Linux,x86_64,C++,C++14
 Java,OpenJDK,1.8.0_45,Linux,x86_64,Java,Java 8
 Scala,OpenJDK,1.8.0_45,Linux,x86_64,Scala,Scala 2.11.6
-Haskell,GHC,7.8.4,Linux,x86_64,Haskell,Haskell
+Haskell,GHC,7.8.4,Linux,x86_64,Haskell,Haskell 2010
 OCaml,OCaml,4.02.0,Linux,x86_64,OCaml,OCaml 4
-C#,Mono,4.6.2,Linux,x86_64,C#,C#
-D,DMD64,2.067,Linux,x86_64,D,D 2
+C#,Mono,4.6.2,Linux,x86_64,C#,C# 6
+D,DMD64,2.067,Linux,x86_64,D,D2
 Ruby,Ruby,2.4.0,Linux,x86_64,Ruby,Ruby 2.4
 Python,CPython,2.7.13,Linux,x86_64,Python2,Python2.7
 Python3,CPython,3.6.3,Linux,x86_64,Python3,Python3.6
