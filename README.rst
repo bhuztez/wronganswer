@@ -10,13 +10,7 @@ online judge clients
 Quick Start
 ===========
 
-Install (Python 3.7 or above is required)
-
-.. code-block:: console
-
-    $ pip3 install --user wronganswer
-
-Clone this repository to get solution used in following examples
+Clone this repository
 
 .. code-block:: console
 
@@ -27,41 +21,101 @@ Test solution locally
 
 .. code-block:: console
 
-    $ wa test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' -- echo 'Hello World'
+    $ python3 -m wronganswer test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' -- echo 'Hello World'
 
 Submit solution to online judge
 
 .. code-block:: console
 
-    $ wa submit 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+    $ python3 -m wronganswer submit 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
 Submit solution via vjudge.net
 
 .. code-block:: console
 
-    $ wa submit --agent=vjudge.net 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+    $ python3 -m wronganswer submit --agent=vjudge.net 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+
+
+Installation
+============
+
+Install (Python 3.7 or above is required)
+
+.. code-block:: console
+
+    $ pip3 install --user wronganswer
+
+Now `wa` could be used, instead of `python3 -m wronganswer`. For example, test solution locally
+
+.. code-block:: console
+
+    $ wa test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' -- echo 'Hello World'
 
 
 Project
 =======
 
-To make life easier, you may put a configuration file in your project, to let WrongAnswer to call the compiler when testing locally.
+WrongAnswer comes with project support.
+
+Test solution locally
 
 .. code-block:: console
 
     $ ./c.py test solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
-And to submit the solution
+And submit the solution
 
 .. code-block:: console
 
     $ ./c.py submit solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
+Now, take a look at `c.py`__ to see how it works
+
+.. __: ./c.py
+
+First is the boilerplate code
+
+.. code-block:: python3
+
+    #!/usr/bin/env python3
+
+    if __name__ == '__main__':
+        from wronganswer.project import main
+        main("Wrong Answer Project")
+        quit()
+
+Then is the regular expression to extract oj and pid from filename of solution
+
+.. code-block:: python3
+
+    SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
+
+Finally, :code:`get_compile_argv` is the function called by WrongAnswer to get command line arguments to call the compiler
+
+.. code-block:: python3
+
+    def cc_argv(filename):
+        yield 'clang'
+        if VERBOSE:
+            yield '-v'
+        yield from ('-Wall','-Wextra','-Werror')
+        yield from ("-x", "c")
+        yield from ("-o", dest_filename(filename))
+        yield "-"
+
+    def get_compile_argv(filename):
+        return dest_filename(filename), list(cc_argv(filename))
+
+
+Advanced
+========
+
 Moreover, WrongAnswer can help you to compile your code locally and submit the assembly to the onlie judge. Run the following to see what is going to be submitted.
 
 .. code-block:: console
 
-    $ ./c.py preview solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+    $ ./a.py preview solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+
 
 
 Local judge protocol (experimental)
