@@ -31,7 +31,23 @@ class AOJClient(HTTP, Judge, Testcase):
     ENV: (
 '''
 C,GCC,5.1.1,Linux,x86_64,C,C11
-''')
+C++,GCC,5.1.1,Linux,x86_64,C++,C++03
+C++11,GCC,5.1.1,Linux,x86_64,C++,C++11
+C++14,GCC,5.1.1,Linux,x86_64,C++,C++14
+Java,OpenJDK,1.8.0_45,Linux,x86_64,Java,Java 8
+Scala,OpenJDK,1.8.0_45,Linux,x86_64,Scala,Scala 2.11.6
+Haskell,GHC,7.8.4,Linux,x86_64,Haskell,Haskell
+OCaml,OCaml,4.02.0,Linux,x86_64,OCaml,OCaml 4
+C#,Mono,4.6.2,Linux,x86_64,C#,C#
+D,DMD64,2.067,Linux,x86_64,D,D 2
+Ruby,Ruby,2.4.0,Linux,x86_64,Ruby,Ruby 2.4
+Python,CPython,2.7.13,Linux,x86_64,Python2,Python2.7
+Python3,CPython,3.6.3,Linux,x86_64,Python3,Python3.6
+PHP,PHP,5.6.32,Linux,x86_64,PHP,PHP 5
+JavaScript,Node.js,6.11.3,Linux,x86_64,ECMAScript,ES4
+Rust,Rust,1.17.0,Linux,x86_64,Rust,Rust Edition 2015
+Go,Go,1.9.2,Linux,x86_64,Go,Go 1.9
+''') # Retrieved 2010-06-20 from http://judge.u-aizu.ac.jp/onlinejudge/status_note.jsp
 
     def http_response(self, request, response):
         response = super().http_response(request, response)

@@ -34,8 +34,11 @@ script:
 - wa -v --debug submit 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 - wa -v --debug submit 'https://leetcode.com/problems/powx-n/' c examples/leetcode.com/50-powx-n.c
 - wa -v --debug submit 'http://poj.org/problem?id=1000' 1 examples/poj.org/1000.c
+- ./a.py -v --debug test solutions
+- ./a.py -v --debug test --mode release solutions
+- ./a.py -v --debug submit solutions
+- ./a.py -v --debug submit examples
 - ./c.py -v --debug test solutions
-- ./c.py -v --debug test --mode release solutions
 - ./c.py -v --debug submit solutions
 - ./c.py -v --debug submit examples
 cache:

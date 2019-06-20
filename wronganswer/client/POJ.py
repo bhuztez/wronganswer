@@ -14,14 +14,14 @@ class POJClient(HTTP, Judge):
 
     ENV: (
 '''
-0,MinGW,4.4.0,Windows,x86,C++,C++03
+0,MinGW,4.4.0,Windows,x86,C++,C++98
 1,MinGW,4.4.0,Windows,x86,C,C99
 2,JDK,6,Windows,x86,Java,Java 6
 3,FreePascal,2.2.0,Windows,x86,Pascal,Free Pascal
-4,MSCV,2008,Windows,x86,C++,C++03
+4,MSCV,2008,Windows,x86,C++,C++98
 5,MSCV,2008,Windows,x86,C,C99
 6,MinGW,4.4.0,Windows,x86,Fortran,Fortran 95
-''')
+''') # Retrieved 2019-06-20 from http://poj.org/page?id=1000
 
     def http_response(self, request, response):
         response = super().http_response(request, response)

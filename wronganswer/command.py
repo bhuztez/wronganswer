@@ -45,12 +45,12 @@ class Command:
         self.add_argument("--debug", action="store_true", default=False, help="turn on debug logging")
         self.add_argument("--retry", type=int, help="max number of retries")
         self.add_argument("-v", "--verbose", action="store_true", default=False, help="verbose output")
-        self(self.help)
+        self.add_command(self.help)
 
     def add_argument(self, *args, **kwargs):
         self._parser.add_argument(*args, **kwargs)
 
-    def __call__(self, func):
+    def add_command(self, func):
         name = func.__name__.lower().replace("_", "-")
         subparser = self._subparsers.add_parser(name, help=func.__doc__)
         params = signature(func).parameters
@@ -78,8 +78,11 @@ class Command:
         """print help message"""
         self._parser.print_help()
 
-    def run(self, init_mod=None, argv=None):
-        mod = ModuleType("__miasma__")
+    def init_mod(self, mod, argv):
+        return self.parse(argv)
+
+    def __call__(self, argv=None):
+        mod = ModuleType("__config__")
         mod.command = self
         mod.Argument = Argument
         mod.task = task
@@ -93,10 +96,7 @@ class Command:
         logger.addHandler(handler)
         logger.setLevel(logging.INFO if mod.VERBOSE else logging.WARNING)
 
-        if init_mod is not None:
-            cmd, args = init_mod(mod, argv or sys.argv[1:])
-        else:
-            cmd, args = self.parse(argv)
+        cmd, args = self.init_mod(mod, argv or sys.argv[1:])
 
         retry = args.retry
         if retry is None:

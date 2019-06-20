@@ -4,6 +4,7 @@ from asyncio import ensure_future, get_event_loop
 from subprocess import PIPE, STDOUT, CalledProcessError, CompletedProcess, run as _run
 from asyncio.subprocess import Process, SubprocessStreamProtocol
 from asyncio.streams import _DEFAULT_LIMIT
+import logging
 
 import platform
 if platform.system() == 'Windows':
@@ -12,6 +13,8 @@ else:
     from pipes import quote
     def quote_argv(argv):
         return " ".join(quote(a) for a in argv)
+
+logger = logging.getLogger(__package__)
 
 from .runner import _runner
 
@@ -66,6 +69,7 @@ class Subprocess(Process):
 
 
 def run(args, executable=None, stdin=None, stdout=None, stderr=None, input=None, capture_output=False, check=False, shell=False, **kwargs):
+    logger.debug("Running `{}`".format(quote_argv(args)))
     runner = _runner.get()
 
     if stdin is None and input is None:

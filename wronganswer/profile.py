@@ -7,7 +7,6 @@ import logging
 from .task import task
 from .subprocess import run, quote_argv
 from .judge import compare_output
-from .asm import escape_source, llvm_target
 from .client import Judge, Testcase
 
 logger = logging.getLogger(__package__)
@@ -37,11 +36,6 @@ def run_test(name, argv, input, output):
     got = run(argv, input=input.read(), capture_output=True, check=True).stdout
     assert compare_output(got, output.read()), "Wrong Answer"
 
-def index_of(l, x):
-    try:
-        return l.index(x)
-    except ValueError:
-        return len(l)
 
 class Profile:
 
@@ -89,6 +83,9 @@ class Profile:
     def get_client(self, oj, type=None):
         return self.get_agent().get_client(oj, type)
 
+    def get_envs(self, oj):
+        return self.get_agent().get_client(oj, Judge).envs
+
     @task("Extract problem ID from URL '{url}'")
     def pid(self, url):
         o = urlparse(url)
@@ -106,6 +103,10 @@ class Profile:
             testcases(client, oj, pid, writer)
             reader = self.cache_store.get(key, pid)
         return reader
+
+    def prologue(self, oj, pid):
+        client = self.get_client(oj, Judge)
+        return client.prologue(pid)
 
     @task("Test solution of problem {pid} of {oj}")
     def run_tests(self, oj, pid, names, argv):
@@ -129,27 +130,6 @@ class Profile:
             status, message, *extra = self.status(oj, token, agent)
         assert status, message
         return message, extra[0]
-
-    def _asm_pick_env(self, envs):
-        envs = [c for c in envs
-                if c.lang == "C" and c.name in ("GCC", "MinGW")]
-        envs.sort(key=lambda c:
-                  (index_of(['Linux','Windows'], c.os),
-                   index_of(['x86_64','x86'], c.arch)))
-        assert envs
-        if envs:
-            return envs[0]
-
-    def asm_llvm_target(self, oj):
-        client = self.get_client(oj, Judge)
-        return llvm_target(self._asm_pick_env(client.envs))
-
-    @task("Escape assembly code")
-    def asm2c(self, oj, pid, source):
-        client = self.get_client(oj, Judge)
-        env = self._asm_pick_env(client.envs)
-        prologue = client.prologue(pid)
-        return env.code, prologue + escape_source(source)
 
     def load_state(self, client):
         if isinstance(client, Persistable):

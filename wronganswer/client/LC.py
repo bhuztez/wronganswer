@@ -13,8 +13,21 @@ class LeetcodeClient(HTTP, Judge):
 
     ENV: (
 '''
+cpp,GCC,8.2,Linux,x86_64,C++,C++17
+java,OpenJDK,1.8.0,Linux,x86_64,Java,Java 8
+python,CPython,2.7.12,Linux,x86_64,Python2,Python 2.7
+python3,CPython,3.6.7,Linux,x86_64,Python3,Python 3.6
 c,GCC,6.3,Linux,x86_64,C,C11
-''')
+csharp,Mono,5.18.0,Linux,x86_64,C#,C# 7
+javascript,Node.js,10.15.0,Linux,x86_64,ECMAScript,ES6
+ruby,Ruby,2.4.5,Linux,x86_64,Ruby,2.4
+swift,Swift,5.0.1,Linux,x86_64,Swift,Swift 5
+golang,Go,1.11.4,Linux,x86_64,Go,Go 1.11
+scala,OpenJDK,1.8.0,Linux,x86_64,Scala,Scala 2.11.12
+kotlin,OpenJDK,1.8.0,Linux,x86_64,Kotlin,Kotlin 1.3.10
+rust,Rust,1.31.0,Linux,x86_64,Rust,Rust Edition 2018
+php,PHP,7.2,Linux,x86_64,PHP,PHP 7
+''') # Retrieved 2019-06-20 from https://support.leetcode.com/hc/en-us/articles/360011833974-What-are-the-environments-for-the-programming-languages-
 
     def http_request(self, request):
         request.add_header('Referer', f'https://{self.netloc}/')

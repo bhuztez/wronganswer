@@ -427,8 +427,3 @@ def compress(source):
 
 def escape_source(source):
     return compress(relabel(source))
-
-def llvm_target(env):
-    return "{}-{}-gnu".format(
-        {"x86": "i686", "x86_64": "x86_64"}[env.arch],
-        {"Windows": "pc-windows", "Linux": "unknown-linux"}[env.os])
