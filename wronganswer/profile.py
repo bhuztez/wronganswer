@@ -3,9 +3,9 @@ import sys
 from abc import ABC, abstractmethod
 from pkg_resources import load_entry_point
 from urllib.parse import urlparse
-from miasma.subprocess import run, quote_argv
 import logging
-from . import task
+from .task import task
+from .subprocess import run, quote_argv
 from .judge import compare_output
 from .asm import escape_source, llvm_target
 from .client import Judge, Testcase

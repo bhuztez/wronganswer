@@ -4,17 +4,11 @@ import os
 import sys
 
 if __name__ == '__main__':
-    try:
-        import miasma
-    except ImportError:
-        ROOT=os.path.dirname(os.path.abspath(__file__))
-        sys.path.append(os.path.dirname(ROOT)+"/miasma")
-
     from wronganswer.project import main
     main("Wrong Answer Project")
     quit()
 
-from miasma.utils import lazy_property
+from wronganswer.utils import lazy_property
 
 SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
 

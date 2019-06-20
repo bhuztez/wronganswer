@@ -7,10 +7,10 @@ import json
 from email.message import Message, _parseparam
 from html.parser import HTMLParser
 from xml.etree.ElementTree import TreeBuilder, XML
-from miasma.utils import lazy_property
 import logging
-from . import task
 from .profile import AuthError, Persistable
+from .task import task
+from .utils import lazy_property
 
 logger = logging.getLogger(__package__)
 

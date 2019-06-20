@@ -1,6 +1,5 @@
 import json
 from urllib.parse import urlparse, urlencode, parse_qs
-from .. import task
 from ..profile import AuthError
 from ..http import HTTP
 from . import Judge, Testcase

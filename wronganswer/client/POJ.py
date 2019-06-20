@@ -1,6 +1,5 @@
 from base64 import b64encode
 from urllib.parse import parse_qs, urlencode, urlparse
-from .. import task
 from ..profile import AuthError
 from ..http import HTTP
 from . import Judge

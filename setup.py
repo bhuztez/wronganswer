@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'wronganswer',
-    version = '0.1.3',
+    version = '0.1.4',
 
     url = 'https://github.com/bhuztez/wronganswer',
     description = 'online judge clients',
@@ -36,7 +36,5 @@ setup(
           'leetcode.com = wronganswer.client.LC:LeetcodeClient',
           'leetcode-cn.com = wronganswer.client.LC:LeetcodeClient',
           'poj.org = wronganswer.client.POJ:POJClient',
-        ]},
-
-    install_requires = ['miasma >= 0.1.3'],
+        ]}
 )

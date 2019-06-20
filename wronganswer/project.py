@@ -6,8 +6,8 @@ def init(cfg):
 
     import os
     import re
-    from miasma.subprocess import run, quote_argv
     import logging
+    from .subprocess import run, quote_argv
     from .profile import Profile
 
     logger = logging.getLogger(__package__)
@@ -206,6 +206,6 @@ def _main(mod, argv):
 
 
 def main(description, argv=None):
-    from miasma import Command
+    from .command import Command
     command = Command(description=description)
     command.run(_main, argv)

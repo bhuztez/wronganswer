@@ -1,6 +1,7 @@
 import os
 import sys
-from miasma import task, Command, Argument
+from .task import task
+from .command import Command, Argument
 from .profile import Profile
 
 
