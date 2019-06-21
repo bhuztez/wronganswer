@@ -21,19 +21,23 @@ Test solution locally
 
 .. code-block:: console
 
-    $ python3 -m wronganswer test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' -- echo 'Hello World'
+    $ python3 -m wronganswer test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' \
+    > -- echo 'Hello World'
 
 Submit solution to online judge
 
 .. code-block:: console
 
-    $ python3 -m wronganswer submit 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+    $ python3 -m wronganswer submit 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' \
+    > C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
 Submit solution via vjudge.net
 
 .. code-block:: console
 
-    $ python3 -m wronganswer submit --agent=vjudge.net 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+    $ python3 -m wronganswer submit --agent=vjudge.net \
+    > 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' \
+    > C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
 
 
 Installation
@@ -49,7 +53,8 @@ Now `wa` could be used, instead of `python3 -m wronganswer`. For example, test s
 
 .. code-block:: console
 
-    $ wa test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' -- echo 'Hello World'
+    $ wa test 'http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A' \
+    > -- echo 'Hello World'
 
 
 Project
@@ -73,7 +78,7 @@ Now, take a look at `c.py`__ to see how it works
 
 .. __: ./c.py
 
-First is the boilerplate code
+First is the boilerplate code, to inform WrongAnswer that this is a project configuration, and make this a script
 
 .. code-block:: python3
 
@@ -84,7 +89,7 @@ First is the boilerplate code
         main("Wrong Answer Project")
         quit()
 
-Then is the regular expression to extract oj and pid from filename of solution
+Then is the regular expression to extract domain name of online judge and problem ID from filename of solution
 
 .. code-block:: python3
 
@@ -101,12 +106,11 @@ Finally, :code:`get_compile_argv` is the function called by WrongAnswer to get c
 Advanced
 ========
 
-Moreover, WrongAnswer can help you to compile your code locally and submit the assembly to the onlie judge. Run the following to see what is going to be submitted.
+Moreover, WrongAnswer can help you to compile your code locally and submit the assembly to the online judge. Run the following to see what is going to be submitted.
 
 .. code-block:: console
 
     $ ./a.py preview solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
-
 
 
 Local judge protocol (experimental)
