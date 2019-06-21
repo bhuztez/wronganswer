@@ -109,5 +109,5 @@ class Command:
 
         logger.setLevel(logging.INFO if mod.VERBOSE else logging.WARNING)
 
-        with Runner(retry):
+        with Runner(retry, args.debug):
             return cmd(args)

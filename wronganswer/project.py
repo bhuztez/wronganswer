@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import platform
 from .asm import escape_source
 from .command import Command, Argument
 from .profile import Profile
@@ -51,6 +52,10 @@ def guess_language(name):
     _, ext = os.path.splitext(name)
     return EXTS[ext]
 
+SUFFIX = ".elf"
+if platform.system() == 'Windows':
+    SUFFIX = ".exe"
+
 
 def init(command, profile, cfg):
     __all__ = (
@@ -73,7 +78,7 @@ def init(command, profile, cfg):
 
     def dest_filename(filename, mode='debug', target=None):
         basename = os.path.splitext(os.path.basename(filename))[0]
-        basename += ".s" if mode == 'release' else ".elf"
+        basename += ".s" if mode == 'release' else SUFFIX
         return os.path.join(os.path.dirname(filename), *cfg.target_dir(mode, target), basename)
 
     def has_to_recompile(dest, *sources):
@@ -145,7 +150,7 @@ def init(command, profile, cfg):
                 env = env[0]
         else:
             assert filename.endswith(".s")
-            dest = filename[:-2] + ".elf"
+            dest = filename[:-2] + SUFFIX
             argv = ('gcc', '-o', dest, '-x', 'c', '-')
             env = None
 

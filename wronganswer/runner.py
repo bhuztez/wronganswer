@@ -67,18 +67,20 @@ class OutputWrapper:
 
 class Runner:
 
-    def __init__(self, max_retries=0):
+    def __init__(self, max_retries=0, debug=False):
         self.max_retries = max_retries
         self._token = None
         self._current = None
         self._stack = ExitStack()
+        self.debug = debug
 
     def __enter__(self):
         assert self._token is None
         self._token = _runner.set(self)
-        self._stack.enter_context(redirect_stdin(InputWrapper(self, sys.__stdin__)))
-        self._stack.enter_context(redirect_stdout(OutputWrapper(self, sys.__stdout__)))
-        self._stack.enter_context(redirect_stderr(OutputWrapper(self, sys.__stderr__)))
+        if not self.debug:
+            self._stack.enter_context(redirect_stdin(InputWrapper(self, sys.__stdin__)))
+            self._stack.enter_context(redirect_stdout(OutputWrapper(self, sys.__stdout__)))
+            self._stack.enter_context(redirect_stderr(OutputWrapper(self, sys.__stderr__)))
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -99,6 +101,9 @@ class Runner:
 
             for i in range(1, max_retries + 1):
                 self._current = Run(task, parent, i)
+                if self.debug:
+                    self.print_status_line(self._current)
+
                 self.print_status()
 
                 try:
@@ -107,9 +112,12 @@ class Runner:
                     exc = sys.exc_info()
                     self.clear_status()
                     print_exception(exc[0], exc[1], exc[2].tb_next.tb_next, file=sys.__stderr__)
-                    self.print_status_line(self._current, False)
+                    if not self.debug:
+                        self.print_status_line(self._current, False)
 
             self._current = Run(task, parent, max_retries + 1 if max_retries else None)
+            if self.debug:
+                self.print_status_line(self._current)
             self.print_status()
             return task()
 
@@ -119,7 +127,8 @@ class Runner:
             exc = sys.exc_info()
             if isinstance(exc[0], Exception):
                 print_exception(exc[0], exc[1], exc[2].tb_next.tb_next, file=sys.__stderr__)
-            self.print_status_line(self._current, exc[0] is None)
+            if not self.debug:
+                self.print_status_line(self._current, exc[0] is None)
             self._current = parent
             self.print_status()
 
@@ -127,20 +136,20 @@ class Runner:
         if status is None:
             status = '  '
         else:
-            if sys.__stderr__.isatty():
+            if not self.debug and sys.__stderr__.isatty():
                 status = '\x1b[92mOK\x1b[39m' if status else '\x1b[31m!!\x1b[39m'
             else:
                 status = 'OK' if status else '!!'
 
         run = str(run)
-        if sys.__stderr__.isatty():
+        if not self.debug and sys.__stderr__.isatty():
             w, _ = get_terminal_size()
             print(f"[ {status} ] {run:{w-7}.{w-7}}", end=end, file=sys.__stderr__)
         else:
             print(f"[ {status} ] {run}", end=end, file=sys.__stderr__)
 
     def print_status(self):
-        if self._current is None:
+        if self.debug or self._current is None:
             return
         if not sys.__stderr__.isatty():
             return
@@ -157,7 +166,7 @@ class Runner:
         print(f'\x1b[0m\x1b[u\x1b[{level}B\x1b[{level}A', end="", file=sys.__stderr__, flush=True)
 
     def clear_status(self):
-        if self._current is None:
+        if self.debug or self._current is None:
             return
         if not sys.__stderr__.isatty():
             return

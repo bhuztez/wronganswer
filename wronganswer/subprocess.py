@@ -14,9 +14,9 @@ else:
     def quote_argv(argv):
         return " ".join(quote(a) for a in argv)
 
-logger = logging.getLogger(__package__)
-
 from .runner import _runner
+
+logger = logging.getLogger(__package__)
 
 
 def run_until_complete(loop, coro):

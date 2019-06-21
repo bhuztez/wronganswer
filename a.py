@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-
 if __name__ == '__main__':
     from wronganswer.project import main
     main("Wrong Answer Project")
     quit()
 
+import os
+import platform
 from wronganswer.utils import lazy_property
 
 SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
@@ -48,11 +47,11 @@ def mingw_include(target):
     if target is None or 'windows' not in target:
         return
     arch = target.split('-', 1)[0]
-    if sys.platform == 'linux':
+    if platform.system() == 'Linux':
         prefix = os.path.join('/usr', arch + '-w64-mingw32')
         for name in 'include', 'sys-root/mingw/include':
             yield from ('-isystem', os.path.join(prefix, name))
-    elif sys.platform == 'darwin':
+    elif platform.system() == 'Darwin':
         yield from ('-isystem', os.path.join(mingw.cellar, 'mingw-w64', mingw.version, 'toolchain-'+arch, arch + '-w64-mingw32', 'include'))
 
 
