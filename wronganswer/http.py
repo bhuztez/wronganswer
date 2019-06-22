@@ -1,6 +1,6 @@
 from io import StringIO
 from http.cookiejar import LWPCookieJar
-from urllib.request import build_opener, Request, HTTPCookieProcessor, BaseHandler, AbstractHTTPHandler
+from urllib.request import build_opener, Request, HTTPCookieProcessor, BaseHandler, AbstractHTTPHandler, HTTPSHandler
 from urllib.parse import urlencode, urlparse, urlunparse
 from http.client import HTTPResponse
 import json
@@ -11,6 +11,13 @@ import logging
 from .profile import AuthError, Persistable
 from .task import task
 from .utils import lazy_property
+
+try:
+    import certifi
+    import ssl
+    SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    SSL_CONTEXT = None
 
 logger = logging.getLogger(__package__)
 
@@ -127,7 +134,7 @@ class HTTP(BaseHandler, Persistable):
         self._cookiejar = LWPCookieJar()
         self._auth_required = False
         self.credential = None
-        opener = build_opener()
+        opener = build_opener(HTTPSHandler(context=SSL_CONTEXT))
         for h in (HTTPCookieProcessor(self._cookiejar),
                   self):
             opener.add_handler(h)

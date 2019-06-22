@@ -39,7 +39,8 @@ def task(format=None, retry=False):
                 return runner.run(Task(func, sig.bind(*args, **kwargs), format, retry))
             except Exception as e:
                 # e = e.with_traceback(e.__traceback__.tb_next.tb_next.tb_next)
-                e = e.with_traceback(None)
+                if not runner.debug:
+                    e = e.with_traceback(None)
                 raise e
 
         return wrapper

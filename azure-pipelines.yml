@@ -1,0 +1,124 @@
+trigger:
+  branches:
+    include:
+    - '*'
+  tags:
+    include:
+    - '*'
+
+strategy:
+  matrix:
+    ubuntu-1604:
+      imageName: "ubuntu-16.04"
+    mac-mojave:
+      imageName: "macos-10.14"
+    mac-high-sierra:
+      imageName: "macos-10.13"
+    win-2019:
+      imageName: "windows-2019"
+    win-2016:
+      imageName: "vs2017-win2016"
+  maxParallel: 1
+
+pool:
+  vmImage: $(imageName)
+
+steps:
+- script: sudo apt-get install -y mingw-w64
+  condition: eq(variables['Agent.OS'], 'Linux')
+  displayName: 'install MinGW (Ubuntu)'
+- script: brew install mingw-w64
+  condition: eq(variables['Agent.OS'], 'Darwin')
+  displayName: 'install MinGW (MacOSX)'
+- script: curl -Lo MacPorts.pkg https://github.com/macports/macports-base/releases/download/v2.5.4/MacPorts-2.5.4-10.14-Mojave.pkg
+  condition: eq(variables['imageName'], 'macos-10.14')
+  displayName: 'download MacPorts (MacOSX 10.14 Mojave)'
+- script: curl -Lo MacPorts.pkg https://github.com/macports/macports-base/releases/download/v2.5.4/MacPorts-2.5.4-10.13-HighSierra.pkg
+  condition: eq(variables['imageName'], 'macos-10.13')
+  displayName: 'download MacPorts (MacOSX 10.13 High Sierra)'
+- script: sudo installer -pkg MacPorts.pkg -target /
+  condition: eq(variables['Agent.OS'], 'Darwin')
+  displayName: 'install MacPorts (MacOSX)'
+- bash: echo '##vso[task.setvariable variable=PATH]'$PATH:/opt/local/bin:/opt/local/sbin
+  condition: eq(variables['Agent.OS'], 'Darwin')
+  displayName: 'set up PATH for MacPorts (MacOSX)'
+- script: sudo port -v install i386-elf-gcc x86_64-elf-gcc
+  condition: eq(variables['Agent.OS'], 'Darwin')
+  displayName: 'install Linux GCC (MacOSX)'
+- script: choco install llvm cygwin cyg-get
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  displayName: 'install LLVM and Cygwin (Windows)'
+- powershell: Write-Host "##vso[task.setvariable variable=PATH]$env:PATH;C:\Program Files\LLVM\bin"
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  displayName: 'set up PATH for LLVM (Windows)'
+- script: cyg-get cygwin-devel
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  displayName: 'install cygwin-devel (Cygwin)'
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.7'
+    architecture: 'x64'
+- script: pip3 install --verbose certifi
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+  displayName: 'install certifi (Windows)'
+- script: pip3 install --verbose .
+  displayName: 'install'
+- script: wa -v --debug test http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A -- echo Hello World
+  displayName: 'test'
+- script: wa -v --debug submit http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+  displayName: 'submit judge.u-aizu.ac.jp'
+  env:
+    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
+    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
+- script: wa -v --debug submit https://leetcode.com/problems/powx-n/ c examples/leetcode.com/50-powx-n.c
+  displayName: 'submit leetcode.com'
+  env:
+    LeetcodeCom_login: $(LeetcodeCom_login)
+    LeetcodeCom_password: $(LeetcodeCom_password)
+- script: wa -v --debug submit http://poj.org/problem?id=1000 1 examples/poj.org/1000.c
+  displayName: 'submit poj.org'
+  env:
+    PojOrg_user_id1: $(PojOrg_user_id1)
+    PojOrg_password1: $(PojOrg_password1)
+- script: python ./c.py -v --debug test solutions
+  displayName: 'test solutions'
+- script: python ./c.py -v --debug submit solutions
+  displayName: 'submit solutions'
+  env:
+    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
+    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
+    LeetcodeCom_login: $(LeetcodeCom_login)
+    LeetcodeCom_password: $(LeetcodeCom_password)
+    PojOrg_user_id1: $(PojOrg_user_id1)
+    PojOrg_password1: $(PojOrg_password1)
+- script: python ./c.py -v --debug submit examples
+  displayName: 'submit examples'
+  env:
+    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
+    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
+    LeetcodeCom_login: $(LeetcodeCom_login)
+    LeetcodeCom_password: $(LeetcodeCom_password)
+    PojOrg_user_id1: $(PojOrg_user_id1)
+    PojOrg_password1: $(PojOrg_password1)
+- script: python ./a.py -v --debug test solutions
+  displayName: 'test solutions (advanced)'
+- script: python ./a.py -v --debug test --mode release solutions
+  displayName: 'test solutions in release mode (advanced)'
+- script: python ./a.py -v --debug submit solutions
+  displayName: 'submit solutions (advanced)'
+  env:
+    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
+    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
+    LeetcodeCom_login: $(LeetcodeCom_login)
+    LeetcodeCom_password: $(LeetcodeCom_password)
+    PojOrg_user_id1: $(PojOrg_user_id1)
+    PojOrg_password1: $(PojOrg_password1)
+- script: python ./a.py -v --debug submit examples
+  displayName: 'submit examples (advanced)'
+  env:
+    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
+    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
+    LeetcodeCom_login: $(LeetcodeCom_login)
+    LeetcodeCom_password: $(LeetcodeCom_password)
+    PojOrg_user_id1: $(PojOrg_user_id1)
+    PojOrg_password1: $(PojOrg_password1)

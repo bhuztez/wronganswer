@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from pkg_resources import load_entry_point
 from urllib.parse import urlparse
 import logging
+from time import sleep
 from .task import task
 from .subprocess import run, quote_argv
 from .judge import compare_output
@@ -47,7 +48,7 @@ class Profile:
             if sys.stdin.isatty():
                 from .credential import readline_get_credential
                 self._get_credential = readline_get_credential
-            if 'TRAVIS_JOB_ID' in os.environ:
+            if 'TRAVIS_JOB_ID' in os.environ or 'TF_BUILD' in os.environ:
                 from .credential import environ_get_credential
                 self._get_credential = environ_get_credential
 
@@ -126,8 +127,11 @@ class Profile:
     def submit(self, oj, pid, env, code, agent="localhost"):
         token = self.raw_submit(oj, pid, env, code, agent)
         status = None
-        while status is None:
+        while True:
             status, message, *extra = self.status(oj, token, agent)
+            if status is not None:
+                break
+            sleep(2)
         assert status, message
         return message, extra[0]
 

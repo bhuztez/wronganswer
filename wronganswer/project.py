@@ -95,9 +95,11 @@ def init(command, profile, cfg):
         filename = os.path.abspath(filename)
 
         if os.path.commonprefix([filename,basedir]) == basedir:
-            return os.path.relpath(filename, basedir)
-        else:
-            return filename
+            filename = os.path.relpath(filename, basedir)
+
+        if os.sep != '/':
+            filename = filename.replace(os.sep, '/')
+        return filename
 
     ROOTDIR = os.path.dirname(os.path.abspath(cfg.__file__))
     SOLUTIONS_DIR = os.path.join(ROOTDIR, "solutions")
@@ -163,6 +165,7 @@ def init(command, profile, cfg):
         if not escape:
             source = cfg.read_source(filename)
         else:
+            print(read_source(filename))
             source = escape_source(read_source(filename))
 
         os.makedirs(os.path.dirname(dest), exist_ok=True)

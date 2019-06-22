@@ -2,8 +2,8 @@
 WrongAnswer
 ===========
 
-.. image:: https://travis-ci.org/bhuztez/wronganswer.svg?branch=master
-    :target: https://travis-ci.org/bhuztez/wronganswer
+.. image:: https://dev.azure.com/bhuztez/QU/_apis/build/status/bhuztez.wronganswer?branchName=master
+    :target: https://dev.azure.com/bhuztez/QU/_build/latest?definitionId=1&branchName=master
 
 online judge clients
 

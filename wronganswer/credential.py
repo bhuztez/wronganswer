@@ -1,8 +1,8 @@
-import readline
 from getpass import getpass
 
 
 def readline_get_credential(oj, fields):
+    import readline
     credential = {}
     for key, desc, is_password in fields:
         default = credential.get(key, '')

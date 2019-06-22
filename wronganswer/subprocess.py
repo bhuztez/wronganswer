@@ -9,6 +9,9 @@ import logging
 import platform
 if platform.system() == 'Windows':
     from subprocess import list2cmdline as quote_argv
+    from asyncio import set_event_loop_policy, get_event_loop_policy, WindowsProactorEventLoopPolicy
+    if not isinstance(get_event_loop_policy(), WindowsProactorEventLoopPolicy):
+        set_event_loop_policy(WindowsProactorEventLoopPolicy())
 else:
     from pipes import quote
     def quote_argv(argv):
