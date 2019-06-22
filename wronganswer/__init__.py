@@ -27,6 +27,13 @@ class WrongAnswer(Command):
             print(output.read().decode(), end='')
 
         @command
+        @task("List environment")
+        def Env(oj: Argument()):
+            '''list environments'''
+            for env in profile.get_envs(oj):
+                print(env)
+
+        @command
         @task("List testcases of {url}")
         def List(url: Argument()):
             '''list testcases'''
