@@ -95,13 +95,18 @@ Then is the regular expression to extract domain name of online judge and proble
 
     SOLUTION_PATTERN = r'^(?:[^/]+)/(?P<oj>[\w\-.]+)(?:/.*)?/(?P<pid>[A-Za-z0-9_\-]+)\.c$'
 
-Finally, :code:`get_compile_argv` is the function called by WrongAnswer to get command line arguments to call the compiler
+or you may define a function :code:`get_solution_info`, which should return a tuple if the file is a solution, and :code:`None` if not. The first element of the tuple should be the domain name of online judge and the second element should be the problem ID.
+
+Finally, :code:`get_compile_argv` is the function called by WrongAnswer to get command line arguments to call the compiler. WrongAnswer would pass the source code of the solution to stdin.
 
 .. code-block:: python3
 
     def get_compile_argv(filename):
         dest = dest_filename(filename)
         return dest, ['gcc','-Wall','-Wextra','-Werror','-x','c','-o',dest,'-']
+
+For scripts, :code:`get_compile_argv` should return :code:`filename, None`.
+
 
 Advanced
 ========
@@ -122,14 +127,19 @@ For example, You may output :code:`"\x1bXf.3\x1b\\"` just before a floating poin
 Supported Online Judges
 =======================
 
-============== ====== ================ ==========
-Online Judge   Submit Fetch test cases vjudge.net
-============== ====== ================ ==========
-`AOJ`__        Y      Y                Y
-`LeetCode`__   Y      N                N
-`POJ`__        Y      N                Y
-============== ====== ================ ==========
+============== ====== ================ ========== =========================
+Online Judge   Submit Fetch test cases vjudge.net Example
+============== ====== ================ ========== =========================
+`AOJ`__        Y      Y                Y          `ITP1_1_A: Hello World`__
+`LeetCode`__   Y      N                N          `50. Pow(x, n)`__
+`POJ`__        Y      N                Y          `1000 A+B Problem`__
+============== ====== ================ ========== =========================
 
 .. __: http://judge.u-aizu.ac.jp/onlinejudge/index.jsp
-.. __: https://leetcode.com
+.. __: ./solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+
+.. __: https://leetcode.com/
+.. __: ./examples/leetcode.com/50-powx-n.c
+
 .. __: http://poj.org/
+.. __: ./examples/poj.org/1000.c
