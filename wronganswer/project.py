@@ -116,6 +116,7 @@ def init(command, profile, cfg):
     def find_solutions(filename=None):
         if filename is None:
             filename = cfg.SOLUTIONS_DIR
+        filename = os.path.abspath(filename)
         if os.path.isdir(filename):
             for root,dirs,files in os.walk(filename):
                 for name in files:
@@ -125,7 +126,7 @@ def init(command, profile, cfg):
                         yield fullname, info
         else:
             fullname = relative_path(cfg.ROOTDIR, filename)
-            info = cfg.get_solution_info(filename)
+            info = cfg.get_solution_info(fullname)
             if info:
                 yield fullname, info
 
@@ -165,7 +166,6 @@ def init(command, profile, cfg):
         if not escape:
             source = cfg.read_source(filename)
         else:
-            print(read_source(filename))
             source = escape_source(read_source(filename))
 
         os.makedirs(os.path.dirname(dest), exist_ok=True)
@@ -185,8 +185,9 @@ def init(command, profile, cfg):
         return dest
 
     @task("Test {filename}")
-    def test_solution(oj, pid, filename, recompile, mode='debug', target=None):
-        executable = compile(filename, recompile, mode, target)
+    def test_solution(oj, pid, filename, recompile, mode='debug', target=None, rootdir=None):
+        path = os.path.join(rootdir or cfg.ROOTDIR, filename)
+        executable = compile(path, recompile, mode, target)
         profile.run_tests(oj, pid, [], cfg.get_run_argv(executable))
 
     def get_submit_env(name, envs):
@@ -200,17 +201,19 @@ def init(command, profile, cfg):
         envs.sort(key = lambda e: index_of(o, e.os))
         return envs[0]
 
-    @task("Read submission code of {name}")
-    def read_submission(name, recompile):
-        oj, pid = cfg.get_solution_info(name)
+    @task("Read submission code of {filename}")
+    def read_submission(filename, recompile, rootdir=None):
+        oj, pid = cfg.get_solution_info(filename)
         envs = profile.get_envs(oj)
-        env = cfg.get_submit_env(name, envs)
+        env = cfg.get_submit_env(filename, envs)
+        path = os.path.join(rootdir or cfg.ROOTDIR, filename)
+
         if env is not None:
-            return env.code, cfg.read_source(name)
+            return env.code, cfg.read_source(path)
 
         env = asm_pick_env(envs)
         target = llvm_target(env)
-        asm = compile(name, recompile, mode='release', target=target)
+        asm = compile(path, recompile, mode='release', target=target)
         source = read_source(asm)
         prologue = profile.prologue(oj, pid)
         return env.code, prologue + escape_source(source)
@@ -227,8 +230,9 @@ def init(command, profile, cfg):
     @task("Clean {filename}")
     def clean_solution(filename, rootdir=None):
         from glob import escape, iglob
-        dirname = escape(os.path.join(os.path.dirname(filename), "target"))
-        basename = escape(os.path.splitext(os.path.basename(filename))[0])
+        path = os.path.join(rootdir or cfg.ROOTDIR, filename)
+        dirname = escape(os.path.join(os.path.dirname(path), "target"))
+        basename = escape(os.path.splitext(os.path.basename(path))[0])
 
         for filename in iglob(f"{dirname}/**/{basename}.*", recursive=True):
             remove_file(filename)

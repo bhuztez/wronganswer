@@ -88,7 +88,7 @@ def cc_argv(filename, *libs, mode, target):
         yield '-fno-addrsig'
     yield from ("-x", "c")
     yield from ("-o", dest_filename(filename, mode, target))
-    yield "-"
+    yield filename
 
 def get_compile_argv(filename, *libs, mode='debug', target=None):
     dest = dest_filename(filename, mode, target)
