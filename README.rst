@@ -131,12 +131,16 @@ Supported Online Judges
 Online Judge   Submit Fetch test cases vjudge.net Example
 ============== ====== ================ ========== =========================
 `AOJ`__        Y      Y                Y          `ITP1_1_A: Hello World`__
+`BZOJ`__       Y      N                N          `1000 A+B Problem`__
 `LeetCode`__   Y      N                N          `50. Pow(x, n)`__
 `POJ`__        Y      N                Y          `1000 A+B Problem`__
 ============== ====== ================ ========== =========================
 
 .. __: http://judge.u-aizu.ac.jp/onlinejudge/index.jsp
 .. __: ./solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
+
+.. __: https://www.lydsy.com/JudgeOnline/
+.. __: ./examples/www.lydsy.com/1000.c
 
 .. __: https://leetcode.com/
 .. __: ./examples/leetcode.com/50-powx-n.c

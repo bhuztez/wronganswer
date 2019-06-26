@@ -45,7 +45,6 @@ class POJClient(HTTP, Judge):
             raise AuthError("Login Required")
 
     def submit(self, pid, env, code):
-        env = env.lstrip()
         last_sid = self.get_last_sid(pid, env)
         self.open(
             "/submit",
@@ -86,7 +85,8 @@ class POJClient(HTTP, Judge):
               "result": result or "",
               "language": env or "",
               "bottom": bottom or "",
-              "top": top or ""})
+              "top": top or ""},
+            method="GET")
 
         html = response.body
         return [
@@ -99,7 +99,7 @@ class POJClient(HTTP, Judge):
               "runtime": tr.findtext("./td[6]"),
               "size": tr.findtext("./td[8]")
             }
-            for tr in html.findall(".//table[@class='a']/tr[@align='center']")]
+            for tr in html.findall(".//table[@class='a']/tbody/tr[@align='center']")]
 
     def status(self, token):
         token = parse_qs(urlparse(token).query)["solution_id"][0]

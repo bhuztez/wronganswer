@@ -75,10 +75,10 @@ def cc_argv(filename, *libs, mode, target):
     yield 'clang'
     if target is not None:
         yield from ('-target', target)
-    elif platform.system() == 'Windows':
-        yield '-fsjlj-exceptions'
-        yield from ('-target', ('x86_64' if sys.maxsize > 2**32 else 'i686') + '-pc-windows-gnu')
     if mode == 'release':
+        if target is None and platform.system() == 'Windows':
+            yield '-fsjlj-exceptions'
+            yield from ('-target', ('x86_64' if sys.maxsize > 2**32 else 'i686') + '-pc-windows-gnu')
         yield from ('-Os', '-S')
     if VERBOSE:
         yield '-v'

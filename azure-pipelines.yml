@@ -24,9 +24,9 @@ pool:
   vmImage: $(imageName)
 
 steps:
-- script: sudo apt-get install -y mingw-w64
+- script: sudo apt-get install -y mingw-w64 libc6-dev-i386 gcc-multilib
   condition: eq(variables['Agent.OS'], 'Linux')
-  displayName: 'install MinGW (Ubuntu)'
+  displayName: 'install MinGW and GCC-multilib (Ubuntu)'
 - script: brew install mingw-w64
   condition: eq(variables['Agent.OS'], 'Darwin')
   displayName: 'install MinGW (MacOSX)'
@@ -63,27 +63,8 @@ steps:
   displayName: 'install certifi (Windows)'
 - script: pip3 install --verbose .
   displayName: 'install'
-- script: wa -v --debug test http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A -- echo Hello World
-  displayName: 'test'
-- script: wa -v --debug submit http://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ITP1_1_A C solutions/judge.u-aizu.ac.jp/ITP1_1_A.c
-  displayName: 'submit judge.u-aizu.ac.jp'
-  env:
-    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
-    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
-- script: wa -v --debug submit https://leetcode.com/problems/powx-n/ c examples/leetcode.com/50-powx-n.c
-  displayName: 'submit leetcode.com'
-  env:
-    LeetcodeCom_login: $(LeetcodeCom_login)
-    LeetcodeCom_password: $(LeetcodeCom_password)
-- script: wa -v --debug submit http://poj.org/problem?id=1000 1 examples/poj.org/1000.c
-  displayName: 'submit poj.org'
-  env:
-    PojOrg_user_id1: $(PojOrg_user_id1)
-    PojOrg_password1: $(PojOrg_password1)
-- script: python ./c.py -v --debug test solutions
-  displayName: 'test solutions'
-- script: python ./c.py -v --debug submit solutions
-  displayName: 'submit solutions'
+- script: python test.py -v
+  displayName: 'run test'
   env:
     JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
     JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
@@ -91,34 +72,5 @@ steps:
     LeetcodeCom_password: $(LeetcodeCom_password)
     PojOrg_user_id1: $(PojOrg_user_id1)
     PojOrg_password1: $(PojOrg_password1)
-- script: python ./c.py -v --debug submit examples
-  displayName: 'submit examples'
-  env:
-    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
-    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
-    LeetcodeCom_login: $(LeetcodeCom_login)
-    LeetcodeCom_password: $(LeetcodeCom_password)
-    PojOrg_user_id1: $(PojOrg_user_id1)
-    PojOrg_password1: $(PojOrg_password1)
-- script: python ./a.py -v --debug test solutions
-  displayName: 'test solutions (advanced)'
-- script: python ./a.py -v --debug test --mode release solutions
-  displayName: 'test solutions in release mode (advanced)'
-- script: python ./a.py -v --debug submit solutions
-  displayName: 'submit solutions (advanced)'
-  env:
-    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
-    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
-    LeetcodeCom_login: $(LeetcodeCom_login)
-    LeetcodeCom_password: $(LeetcodeCom_password)
-    PojOrg_user_id1: $(PojOrg_user_id1)
-    PojOrg_password1: $(PojOrg_password1)
-- script: python ./a.py -v --debug submit examples
-  displayName: 'submit examples (advanced)'
-  env:
-    JudgeU_aizuAcJp_id: $(JudgeU_aizuAcJp_id)
-    JudgeU_aizuAcJp_password: $(JudgeU_aizuAcJp_password)
-    LeetcodeCom_login: $(LeetcodeCom_login)
-    LeetcodeCom_password: $(LeetcodeCom_password)
-    PojOrg_user_id1: $(PojOrg_user_id1)
-    PojOrg_password1: $(PojOrg_password1)
+    WwwLydsyCom_user_id: $(WwwLydsyCom_user_id)
+    WwwLydsyCom_password: $(WwwLydsyCom_password)

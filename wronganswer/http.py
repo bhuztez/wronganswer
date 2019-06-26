@@ -5,8 +5,6 @@ from urllib.parse import urlencode, urlparse, urlunparse
 from http.client import HTTPResponse
 import json
 from email.message import Message, _parseparam
-from html.parser import HTMLParser
-from xml.etree.ElementTree import TreeBuilder, XML
 import logging
 from .profile import AuthError, Persistable
 from .task import task
@@ -83,25 +81,6 @@ def request(scheme, netloc, url, data=None, headers=None, method=None):
     return Request(url, data, headers, method=method or "POST")
 
 
-class HTMLParser(HTMLParser):
-
-    def __init__(self, target):
-        super().__init__()
-        self.target = target
-
-    def handle_starttag(self, tag, attrs):
-        self.target.start(tag, dict(attrs))
-
-    def handle_endtag(self, tag):
-        self.target.end(tag)
-
-    def handle_data(self, data):
-        self.target.data(data)
-
-    def close(self):
-        return self.target.close()
-
-
 class Response(HTTPResponse):
 
     @lazy_property
@@ -110,12 +89,14 @@ class Response(HTTPResponse):
         content_type = self.info().get('Content-Type', None)
         if content_type is not None:
             content_type, main_type, subtype, params = parse_content_type(content_type)
-            charset = params.get("charset", "ascii")
-            data = data.decode(charset)
+            charset = params.get("charset", None)
             if subtype == 'json':
                 data = json.loads(data)
             elif subtype == 'html':
-                data = XML(data, parser=HTMLParser(TreeBuilder()))
+                from html5lib import parse
+                data = parse(data, namespaceHTMLElements=False)
+            else:
+                data = data.decode(charset)
 
         return data
 

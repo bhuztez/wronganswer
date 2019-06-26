@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'wronganswer',
-    version = '0.1.4',
+    version = '0.1.5',
 
     url = 'https://github.com/bhuztez/wronganswer',
     description = 'online judge clients',
@@ -38,5 +38,7 @@ setup(
           'leetcode.com = wronganswer.client.LC:LeetcodeClient',
           'leetcode-cn.com = wronganswer.client.LC:LeetcodeClient',
           'poj.org = wronganswer.client.POJ:POJClient',
-        ]}
+          'www.lydsy.com = wronganswer.client.BZOJ:BZOJClient',
+        ]},
+    install_requires = ['html5lib']
 )
