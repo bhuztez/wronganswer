@@ -73,8 +73,7 @@ def init(command, profile, cfg):
         yield 'target'
         if target is not None:
             yield target
-        else:
-            yield mode
+        yield mode
 
     def dest_filename(filename, mode='debug', target=None):
         basename = os.path.splitext(os.path.basename(filename))[0]

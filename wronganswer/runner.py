@@ -144,9 +144,11 @@ class Runner:
         run = str(run)
         if not self.debug and sys.__stderr__.isatty():
             w, _ = get_terminal_size()
-            print(f"[ {status} ] {run:{w-7}.{w-7}}", end=end, file=sys.__stderr__)
-        else:
-            print(f"[ {status} ] {run}", end=end, file=sys.__stderr__)
+            if w:
+                print(f"[ {status} ] {run:{w-7}.{w-7}}", end=end, file=sys.__stderr__)
+                return
+
+        print(f"[ {status} ] {run}", end=end, file=sys.__stderr__)
 
     def print_status(self):
         if self.debug or self._current is None:
