@@ -184,10 +184,10 @@ def init(command, profile, cfg):
         return dest
 
     @task("Test {filename}")
-    def test_solution(oj, pid, filename, recompile, mode='debug', target=None, rootdir=None):
+    def test_solution(oj, pid, filename, recompile, mode='debug', names=None, target=None, rootdir=None):
         path = os.path.join(rootdir or cfg.ROOTDIR, filename)
         executable = compile(path, recompile, mode, target)
-        profile.run_tests(oj, pid, [], cfg.get_run_argv(executable))
+        profile.run_tests(oj, pid, names, cfg.get_run_argv(executable))
 
     def get_submit_env(name, envs):
         lang = guess_language(name)
@@ -249,10 +249,45 @@ def init(command, profile, cfg):
     @task("Test")
     def test(filename: Argument(nargs='?', help="path to solution") = None,
              recompile: Argument("-r", "--recompile", action="store_true", help="force recompile") = False,
-             mode: Argument("--mode") = 'debug'):
+             mode: Argument("--mode") = 'debug',
+             names: Argument("--only", nargs='+', required=False) = None):
         '''check solution against sample testcases'''
         for name, (oj, pid) in cfg.find_solutions(filename):
-            test_solution(oj, pid, name, recompile, mode)
+            test_solution(oj, pid, name, recompile, mode, names)
+
+    @command
+    @task("List of testcases")
+    def List(filename: Argument(help="path to solution")):
+        '''list testcases'''
+        filename = relative_path(cfg.ROOTDIR, filename)
+        oj, pid = cfg.get_solution_info(filename)
+        reader = profile.testcases(oj, pid)
+        for name in reader:
+            print(name)
+
+    @command
+    @task("Input of testcase")
+    def In(filename: Argument(help="path to solution"),
+           names: Argument(nargs='*')):
+        '''print input'''
+        filename = relative_path(cfg.ROOTDIR, filename)
+        oj, pid = cfg.get_solution_info(filename)
+        reader = profile.testcases(oj, pid)
+        for name in names or reader:
+            input, output = reader[name]
+            print(input.read().decode(), end='')
+
+    @command
+    @task("Output of testcase")
+    def Out(filename: Argument(help="path to solution"),
+           names: Argument(nargs='*')):
+        '''print output'''
+        filename = relative_path(cfg.ROOTDIR, filename)
+        oj, pid = cfg.get_solution_info(filename)
+        reader = profile.testcases(oj, pid)
+        for name in names or reader:
+            input, output = reader[name]
+            print(output.read().decode(), end='')
 
     @command
     @task("Preview submission of {filename}")
