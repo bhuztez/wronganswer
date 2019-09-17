@@ -153,7 +153,7 @@ def init(command, profile, cfg):
         else:
             assert filename.endswith(".s")
             dest = filename[:-2] + SUFFIX
-            argv = ('gcc', '-o', dest, '-x', 'c', '-')
+            argv = ('gcc', '-o', dest, '-x', 'c', '-', '-lm')
             env = None
 
         if dest == filename:
