@@ -1,6 +1,6 @@
 from io import StringIO
 from http.cookiejar import LWPCookieJar
-from urllib.request import build_opener, Request, HTTPCookieProcessor, BaseHandler, AbstractHTTPHandler, HTTPSHandler
+from urllib.request import build_opener, Request, HTTPCookieProcessor, AbstractHTTPHandler, HTTPSHandler, HTTPErrorProcessor
 from urllib.parse import urlencode, urlparse, urlunparse
 from http.client import HTTPResponse
 import json
@@ -103,7 +103,7 @@ class Response(HTTPResponse):
 USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
 
 
-class HTTP(BaseHandler, Persistable):
+class HTTP(HTTPErrorProcessor, Persistable):
     scheme = 'https'
     JSON = 'application/json; charset=UTF-8'
     URLENCODE = 'application/x-www-form-urlencoded; charset=UTF-8'
@@ -115,10 +115,10 @@ class HTTP(BaseHandler, Persistable):
         self._cookiejar = LWPCookieJar()
         self._auth_required = False
         self.credential = None
-        opener = build_opener(HTTPSHandler(context=SSL_CONTEXT))
-        for h in (HTTPCookieProcessor(self._cookiejar),
-                  self):
-            opener.add_handler(h)
+        opener = build_opener(
+            HTTPSHandler(context=SSL_CONTEXT),
+            HTTPCookieProcessor(self._cookiejar),
+            self)
         opener.addheaders = [('User-Agent', USER_AGENT)]
 
     def set_http_debuglevel(self, level):
@@ -133,6 +133,8 @@ class HTTP(BaseHandler, Persistable):
         return self.http_request(request)
 
     def http_response(self, request, response):
+        if response.code >= 500:
+            return super().http_response(request, response)
         response.__class__ = Response
         return response
 
@@ -179,7 +181,9 @@ class HTTP(BaseHandler, Persistable):
         return self._do_open(request)
 
     def open(self, url, data=None, headers=None, method=None):
-        return self._open(request(self.scheme, self.netloc, url, data, headers, method))
+        r = request(self.scheme, self.netloc, url, data, headers, method)
+        return super().http_response(r, self._open(r))
 
     def raw_open(self, url, data=None, headers=None, method=None):
-        return self._raw_open(request(self.scheme, self.netloc, url, data, headers, method))
+        r = request(self.scheme, self.netloc, url, data, headers, method)
+        return super().http_response(r, self._raw_open(r))

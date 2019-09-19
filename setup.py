@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'wronganswer',
-    version = '0.1.6',
+    version = '0.1.7',
 
     url = 'https://github.com/bhuztez/wronganswer',
     description = 'online judge clients',
